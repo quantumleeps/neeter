@@ -1,5 +1,9 @@
 # fireworks-ai
 
+[![npm version](https://img.shields.io/npm/v/fireworks-ai)](https://www.npmjs.com/package/fireworks-ai)
+[![npm downloads](https://img.shields.io/npm/dm/fireworks-ai)](https://www.npmjs.com/package/fireworks-ai)
+[![license](https://img.shields.io/npm/l/fireworks-ai)](./LICENSE)
+
 A React + Hono toolkit for building chat UIs on top of the [Claude Agent SDK](https://github.com/anthropics/claude-agent-sdk). Tool calls, text deltas, and results are individual sparks — fireworks-ai launches them into a unified, vivid display.
 
 ## Why fireworks-ai
