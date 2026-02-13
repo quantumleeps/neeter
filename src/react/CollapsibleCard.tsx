@@ -39,7 +39,7 @@ export function CollapsibleCard({
           <path d="m9 18 6-6-6-6" />
         </svg>
         {status && <StatusDot status={status} />}
-        <span>{label}</span>
+        <span className="truncate min-w-0">{label}</span>
       </button>
       {open && <div className="px-2.5 pb-2">{children}</div>}
     </div>

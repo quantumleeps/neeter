@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import type { PermissionResponse } from "../types.js";
 import type { SessionManager } from "./session.js";
 import { type MessageTranslator, sseEncode, streamSession } from "./translator.js";
 
@@ -58,6 +59,24 @@ export function createAgentRouter<TCtx>(config: {
         Connection: "keep-alive",
       },
     });
+  });
+
+  app.post(`${basePath}/sessions/:id/permissions`, async (c) => {
+    const session = sessions.get(c.req.param("id"));
+    if (!session) return c.json({ error: "Session not found" }, 404);
+
+    const body = await c.req.json<PermissionResponse>();
+    if (!body.requestId || !body.kind) {
+      return c.json({ error: "Invalid permission response" }, 400);
+    }
+
+    const resolved = session.permissionGate.respond(body);
+    if (!resolved) {
+      return c.json({ error: "No pending request with this ID" }, 404);
+    }
+
+    session.lastActivityAt = Date.now();
+    return c.json({ ok: true });
   });
 
   return app;

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useSyncExternalStore } from "react";
-import type { CustomEvent } from "../types.js";
+import type { CustomEvent, PermissionRequest, PermissionResponse } from "../types.js";
 import type { ChatStore } from "./store.js";
 
 export interface UseAgentConfig {
@@ -10,6 +10,7 @@ export interface UseAgentConfig {
 export interface UseAgentReturn {
   sessionId: string | null;
   sendMessage: (text: string) => Promise<void>;
+  respondToPermission: (response: PermissionResponse) => Promise<void>;
 }
 
 export function useAgent(store: ChatStore, config?: UseAgentConfig): UseAgentReturn {
@@ -74,6 +75,11 @@ export function useAgent(store: ChatStore, config?: UseAgentConfig): UseAgentRet
       }
     });
 
+    es.addEventListener("permission_request", (e) => {
+      const request = JSON.parse(e.data) as PermissionRequest;
+      store.getState().addPermissionRequest(request);
+    });
+
     es.addEventListener("session_error", (e) => {
       store.getState().flushStreamingText();
       store.getState().setThinking(false);
@@ -122,5 +128,18 @@ export function useAgent(store: ChatStore, config?: UseAgentConfig): UseAgentRet
     [sessionId, endpoint, store],
   );
 
-  return { sessionId, sendMessage };
+  const respondToPermission = useCallback(
+    async (response: PermissionResponse) => {
+      if (!sessionId) return;
+      store.getState().removePermissionRequest(response.requestId);
+      await fetch(`${endpoint}/sessions/${sessionId}/permissions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(response),
+      });
+    },
+    [sessionId, endpoint, store],
+  );
+
+  return { sessionId, sendMessage, respondToPermission };
 }

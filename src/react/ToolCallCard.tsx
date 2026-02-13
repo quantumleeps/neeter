@@ -1,4 +1,6 @@
-import type { ToolCallInfo, WidgetProps } from "../types.js";
+import type { ToolApprovalRequest, ToolCallInfo, WidgetProps } from "../types.js";
+import { useAgentContext, useChatStore } from "./AgentProvider.js";
+import { ApprovalButtons } from "./ApprovalButtons.js";
 import { CollapsibleCard } from "./CollapsibleCard.js";
 import { cn } from "./cn.js";
 import { getWidget, stripMcpPrefix } from "./registry.js";
@@ -15,16 +17,25 @@ export function ToolCallCard({
   const reg = getWidget(short);
   const label = reg?.label ?? short;
 
+  const pendingPermissions = useChatStore((s) => s.pendingPermissions);
+  const { respondToPermission, store } = useAgentContext();
+  const isNonTerminal = toolCall.status !== "complete" && toolCall.status !== "error";
+  const matchingApproval = isNonTerminal
+    ? (pendingPermissions.find(
+        (p) => p.kind === "tool_approval" && p.toolName === toolCall.name,
+      ) as ToolApprovalRequest | undefined)
+    : undefined;
+
   if (toolCall.status === "complete" && toolCall.result && reg) {
     let parsed: unknown;
     try {
       parsed = JSON.parse(toolCall.result);
     } catch {
-      parsed = undefined;
+      parsed = toolCall.result;
     }
 
     const displayLabel =
-      parsed && reg.richLabel ? (reg.richLabel(parsed as never) ?? label) : label;
+      reg.richLabel ? (reg.richLabel(parsed as never, toolCall.input) ?? label) : label;
 
     const widgetProps: WidgetProps = {
       phase: toolCall.status,
@@ -53,6 +64,55 @@ export function ToolCallCard({
         <StatusDot status={toolCall.status} />
         <span>{label}</span>
         {toolCall.error && <span className="ml-auto text-destructive">{toolCall.error}</span>}
+      </div>
+    );
+  }
+
+  if (matchingApproval) {
+    const InputRenderer = reg?.inputRenderer;
+    return (
+      <div
+        className={cn(
+          "rounded-md border border-yellow-500/40 bg-yellow-500/5 px-3 py-2.5 text-xs",
+          className,
+        )}
+      >
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <span className="inline-block h-2 w-2 rounded-full bg-yellow-500 animate-pulse" />
+          <span className="font-medium">{label}</span>
+          {matchingApproval.description && (
+            <span className="ml-1 opacity-70">&mdash; {matchingApproval.description}</span>
+          )}
+        </div>
+
+        {InputRenderer ? (
+          <InputRenderer input={matchingApproval.input} />
+        ) : (
+          Object.keys(matchingApproval.input).length > 0 && (
+            <pre className="mt-1.5 max-h-32 overflow-auto rounded bg-background/60 px-2 py-1 font-mono text-[10px] text-muted-foreground">
+              {JSON.stringify(matchingApproval.input, null, 2)}
+            </pre>
+          )
+        )}
+
+        <ApprovalButtons
+          onApprove={() =>
+            respondToPermission({
+              kind: "tool_approval",
+              requestId: matchingApproval.requestId,
+              behavior: "allow",
+            })
+          }
+          onDeny={() => {
+            store.getState().errorToolCall(toolCall.id, "Not approved");
+            respondToPermission({
+              kind: "tool_approval",
+              requestId: matchingApproval.requestId,
+              behavior: "deny",
+              message: "Denied by user",
+            });
+          }}
+        />
       </div>
     );
   }

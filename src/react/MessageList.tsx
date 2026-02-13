@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useChatStore } from "./AgentProvider.js";
 import { cn } from "./cn.js";
+import { PendingPermissions } from "./PendingPermissions.js";
 import { TextMessage } from "./TextMessage.js";
 import { ThinkingIndicator } from "./ThinkingIndicator.js";
 import { ToolCallCard } from "./ToolCallCard.js";
@@ -48,6 +49,7 @@ export function MessageList({ className }: { className?: string }) {
           return null;
         })}
         {streamingText && <TextMessage role="assistant" content={streamingText} />}
+        <PendingPermissions />
         {isThinking && <ThinkingIndicator />}
         <div ref={bottomRef} />
       </div>

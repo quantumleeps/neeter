@@ -1,4 +1,5 @@
 import type { CustomEvent, SSEEvent } from "../types.js";
+import { PushChannel } from "./push-channel.js";
 import type { Session } from "./session.js";
 
 export interface TranslatorConfig<TCtx> {
@@ -29,13 +30,33 @@ export class MessageTranslator<TCtx> {
           }
           case "content_block_start": {
             const block = event.content_block as Record<string, unknown>;
-            if (block?.type === "tool_use" && typeof block.id === "string") {
-              const name = block.name as string;
-              this.toolNames.set(block.id, name);
-              events.push({
-                event: "tool_start",
-                data: JSON.stringify({ id: block.id, name }),
-              });
+            switch (block?.type) {
+              case "tool_use":
+              case "server_tool_use": {
+                const id = block.id as string;
+                const name = block.name as string;
+                this.toolNames.set(id, name);
+                events.push({
+                  event: "tool_start",
+                  data: JSON.stringify({ id, name }),
+                });
+                break;
+              }
+              case "web_search_tool_result": {
+                const toolUseId = block.tool_use_id as string;
+                const toolName = this.toolNames.get(toolUseId);
+                const result = JSON.stringify(block.content);
+                events.push({
+                  event: "tool_result",
+                  data: JSON.stringify({ toolUseId, result }),
+                });
+                if (this.config.onToolResult && toolName) {
+                  for (const c of this.config.onToolResult(toolName, result, session)) {
+                    events.push({ event: "custom", data: JSON.stringify(c) });
+                  }
+                }
+                break;
+              }
             }
             break;
           }
@@ -68,14 +89,33 @@ export class MessageTranslator<TCtx> {
         const msg = (message as { message?: { content?: Array<Record<string, unknown>> } }).message;
         if (msg?.content) {
           for (const block of msg.content) {
-            if (block.type === "tool_use") {
-              const name = block.name as string;
-              const id = block.id as string;
-              this.toolNames.set(id, name);
-              events.push({
-                event: "tool_call",
-                data: JSON.stringify({ id, name, input: block.input }),
-              });
+            switch (block.type) {
+              case "tool_use":
+              case "server_tool_use": {
+                const name = block.name as string;
+                const id = block.id as string;
+                this.toolNames.set(id, name);
+                events.push({
+                  event: "tool_call",
+                  data: JSON.stringify({ id, name, input: block.input }),
+                });
+                break;
+              }
+              case "web_search_tool_result": {
+                const toolUseId = block.tool_use_id as string;
+                const toolName = this.toolNames.get(toolUseId);
+                const result = JSON.stringify(block.content);
+                events.push({
+                  event: "tool_result",
+                  data: JSON.stringify({ toolUseId, result }),
+                });
+                if (this.config.onToolResult && toolName) {
+                  for (const c of this.config.onToolResult(toolName, result, session)) {
+                    events.push({ event: "custom", data: JSON.stringify(c) });
+                  }
+                }
+                break;
+              }
             }
           }
         }
@@ -153,11 +193,34 @@ export async function* streamSession<TCtx>(
   session: Session<TCtx>,
   translator: MessageTranslator<TCtx>,
 ): AsyncGenerator<SSEEvent> {
-  for await (const message of session.messageIterator) {
-    const events = translator.translate(message as Record<string, unknown>, session);
-    for (const evt of events) {
-      yield evt;
+  const output = new PushChannel<SSEEvent>();
+
+  const unsubscribe = session.permissionGate.onRequest((request) => {
+    output.push({ event: "permission_request", data: JSON.stringify(request) });
+  });
+
+  for (const pending of session.permissionGate.getPending()) {
+    yield { event: "permission_request", data: JSON.stringify(pending) };
+  }
+
+  const driveMessages = async () => {
+    try {
+      for await (const message of session.messageIterator) {
+        const events = translator.translate(message as Record<string, unknown>, session);
+        for (const evt of events) {
+          output.push(evt);
+        }
+      }
+    } finally {
+      unsubscribe();
+      output.close();
     }
+  };
+
+  driveMessages();
+
+  for await (const evt of output) {
+    yield evt;
   }
 }
 
@@ -165,10 +228,13 @@ function extractToolResultText(block: Record<string, unknown>): string {
   const content = block.content;
   if (typeof content === "string") return content;
   if (Array.isArray(content)) {
-    return content
+    const textParts = content
       .filter((p: Record<string, unknown>) => p.type === "text" && typeof p.text === "string")
-      .map((p: Record<string, unknown>) => p.text)
-      .join("");
+      .map((p: Record<string, unknown>) => p.text as string);
+    if (textParts.length > 0) return textParts.join("");
+    // Non-text content blocks (e.g. web_search_tool_result) — serialize so
+    // downstream consumers (widgets, onToolResult) can still parse the data.
+    return JSON.stringify(content);
   }
   return "";
 }

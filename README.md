@@ -14,6 +14,7 @@ The Claude Agent SDK gives you a powerful agentic loop — but it's a server-sid
 - **Named SSE event routing** — The SDK yields a flat stream of internal message types. The `MessageTranslator` reshapes them into semantically named SSE events (`text_delta`, `tool_start`, `tool_call`, `tool_result`, ...) that the browser's `EventSource` can route with native `addEventListener`.
 - **UI-friendly tool lifecycle** — Tool calls move through `pending` → `streaming_input` → `running` → `complete` phases with streaming JSON input, giving your UI fine-grained control over loading states and progressive rendering.
 - **Structured custom events** — Hook into tool results with `onToolResult` and emit typed `{ name, value }` events for app-specific reactivity (e.g. "document saved", "data refreshed") without touching the core protocol.
+- **Browser-side tool approval** — The SDK's `canUseTool` callback fires on the server, but your users are in the browser. `PermissionGate` bridges the gap with deferred promises, SSE events, and an HTTP POST endpoint — the agent blocks until the user clicks Allow/Deny or answers a clarifying question.
 - **Client-server separation** — Server handles transport (SSE encoding, session routing). Client handles state (Zustand store, React components). The translator is the clean seam between them.
 
 ## Install
@@ -70,13 +71,14 @@ app.route("/", createAgentRouter({ sessions, translator }));
 serve({ fetch: app.fetch, port: 3000 });
 ```
 
-This gives you three endpoints:
+This gives you four endpoints:
 
 | Method | Path | Description |
 |--------|------|-------------|
 | `POST` | `/api/sessions` | Create a session, returns `{ sessionId }` |
 | `POST` | `/api/sessions/:id/messages` | Send `{ text }` to a session |
 | `GET` | `/api/sessions/:id/events` | SSE stream of agent events |
+| `POST` | `/api/sessions/:id/permissions` | Respond to a permission request (see [Permissions](#permissions)) |
 
 ### Session context
 
@@ -116,6 +118,35 @@ const translator = new MessageTranslator<MyContext>({
 ```
 
 Each returned `{ name, value }` object is sent to the client as a `custom` SSE event.
+
+### Permissions
+
+By default sessions run with `permissionMode: "bypassPermissions"` — all tools execute automatically. Set `permissionMode` to `"default"` (or `"acceptEdits"`) to require browser-side approval before each tool runs:
+
+```typescript
+const sessions = new SessionManager(() => ({
+  context: {},
+  model: "claude-sonnet-4-5-20250929",
+  systemPrompt: "You are a helpful assistant.",
+  permissionMode: "default",
+}));
+```
+
+When `permissionMode` is not `"bypassPermissions"`:
+
+1. Every tool call blocks the SDK until the user responds
+2. `AskUserQuestion` calls surface as structured questions with options
+3. `permission_request` SSE events fire to the client
+4. The user's response is POSTed back to `/api/sessions/:id/permissions`
+
+The `PermissionGate` on each session manages the deferred promises internally — no additional wiring needed.
+
+| Mode | Behavior |
+|------|----------|
+| `"bypassPermissions"` | All tools auto-approved (default) |
+| `"default"` | Every tool call requires explicit approval |
+| `"acceptEdits"` | File edits auto-approved, other tools require approval |
+| `"plan"` | Planning mode — SDK-defined behavior |
 
 ## Client
 
@@ -201,6 +232,29 @@ registerWidget({
 
 Tool calls without a registered widget show a minimal status indicator.
 
+#### Built-in widgets
+
+fireworks-ai ships two built-in widgets that auto-register on import:
+
+- **WebSearchWidget** — renders web search results as link pills with favicons
+- **AskUserQuestionWidget** — displays completed question/answer pairs from `AskUserQuestion`
+
+These register automatically when you import from `fireworks-ai/react`.
+
+#### Input preview
+
+Widgets can provide an `inputRenderer` to customize how tool input is displayed in the approval card (when `permissionMode` is not `"bypassPermissions"`):
+
+```tsx
+registerWidget({
+  toolName: "web_search",
+  label: "Web Search",
+  richLabel: (result, input) => `Search: ${input.query}`,
+  inputRenderer: ({ input }) => <span>Searching: {input.query as string}</span>,
+  component: WebSearchWidget,
+});
+```
+
 ### Tool call lifecycle
 
 Each tool call moves through phases, reflected in `WidgetProps.phase`:
@@ -258,11 +312,12 @@ Drop the `fireworks-ai/theme.css` import and add `@source` — your shadcn theme
 | Export | Description |
 |--------|-------------|
 | `SessionManager<TCtx>` | Manages agent sessions with per-session context |
-| `Session<TCtx>` | A single session — `id`, `context`, `pushMessage()`, `abort()` |
-| `SessionInit<TCtx>` | Factory return type — `model`, `systemPrompt`, `mcpServers`, etc. |
+| `Session<TCtx>` | A single session — `id`, `context`, `pushMessage()`, `permissionGate`, `abort()` |
+| `SessionInit<TCtx>` | Factory return type — `model`, `systemPrompt`, `permissionMode`, `mcpServers`, etc. |
 | `MessageTranslator<TCtx>` | Converts SDK messages to SSE events |
 | `TranslatorConfig<TCtx>` | Translator options — `onToolResult` hook |
-| `createAgentRouter<TCtx>(config)` | Returns a Hono app with session + SSE routes |
+| `createAgentRouter<TCtx>(config)` | Returns a Hono app with session, SSE, and permission routes |
+| `PermissionGate` | Per-session deferred-promise map for tool approval and user questions |
 | `PushChannel<T>` | Async iterable queue for feeding messages to the SDK |
 | `sseEncode(event)` | Formats an `SSEEvent` as an SSE string |
 | `streamSession(session, translator)` | Async generator yielding `SSEEvent`s |
@@ -272,14 +327,17 @@ Drop the `fireworks-ai/theme.css` import and add `@source` — your shadcn theme
 | Export | Description |
 |--------|-------------|
 | `AgentProvider` | Context provider — wraps store + SSE connection |
-| `useAgentContext()` | Returns `{ sessionId, sendMessage, store }` |
+| `useAgentContext()` | Returns `{ sessionId, sendMessage, respondToPermission, store }` |
 | `useChatStore(selector)` | Zustand selector hook into chat state |
 | `createChatStore()` | Creates a vanilla Zustand store (for advanced use) |
 | `useAgent(store, config?)` | SSE connection hook (used internally by `AgentProvider`) |
-| `MessageList` | Auto-scrolling message list with thinking indicator |
+| `MessageList` | Auto-scrolling message list with pending permissions and thinking indicator |
 | `TextMessage` | Markdown-rendered message bubble |
 | `ChatInput` | Textarea + send button |
-| `ToolCallCard` | Lifecycle-aware tool call display |
+| `ToolCallCard` | Lifecycle-aware tool call display with inline approval |
+| `PendingPermissions` | Renders pending tool approval and user question cards |
+| `ToolApprovalCard` | Tool approval card with Allow/Deny buttons |
+| `UserQuestionCard` | Structured question card with option selection |
 | `ThinkingIndicator` | Animated dots shown while agent is generating |
 | `CollapsibleCard` | Expandable card wrapper |
 | `StatusDot` | Phase-colored status indicator |
@@ -297,10 +355,17 @@ Drop the `fireworks-ai/theme.css` import and add `@source` — your shadcn theme
 | `ToolCallInfo` | `{ id, name, input, partialInput?, result?, error?, status }` |
 | `ToolCallPhase` | `"pending" \| "streaming_input" \| "running" \| "complete" \| "error"` |
 | `WidgetProps<TResult>` | Props passed to widget components |
-| `WidgetRegistration<TResult>` | Widget registration descriptor |
+| `WidgetRegistration<TResult>` | Widget registration — `toolName`, `label`, `richLabel?`, `inputRenderer?`, `component` |
 | `ChatStore` | `StoreApi<ChatStoreShape>` — vanilla Zustand store |
 | `ChatStoreShape` | Full state + actions interface |
 | `CustomEvent<T>` | `{ name: string, value: T }` — structured app-level event |
+| `PermissionRequest` | `ToolApprovalRequest \| UserQuestionRequest` — pending permission |
+| `PermissionResponse` | `ToolApprovalResponse \| UserQuestionResponse` — user's answer |
+| `ToolApprovalRequest` | `{ kind, requestId, toolName, input, description? }` |
+| `ToolApprovalResponse` | `{ kind, requestId, behavior: "allow" \| "deny", message? }` |
+| `UserQuestion` | `{ question, header?, options?, multiSelect? }` |
+| `UserQuestionRequest` | `{ kind, requestId, questions: UserQuestion[] }` |
+| `UserQuestionResponse` | `{ kind, requestId, answers: Record<string, string> }` |
 
 ## SSE Events
 
@@ -315,6 +380,7 @@ Events emitted by the server, handled automatically by `useAgent`:
 | `tool_call` | `{ id, name, input }` | Tool input finalized |
 | `tool_result` | `{ toolUseId, result }` | Tool execution result |
 | `tool_progress` | `{ toolName, elapsed }` | Long-running tool heartbeat |
+| `permission_request` | `PermissionRequest` | Tool approval or user question awaiting response |
 | `turn_complete` | `{ numTurns, cost }` | Agent turn finished |
 | `custom` | `{ name, value }` | App-specific event from `onToolResult` |
 | `session_error` | `{ subtype }` | Session ended with error |

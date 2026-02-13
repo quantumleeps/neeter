@@ -1,6 +1,6 @@
 import { immer } from "zustand/middleware/immer";
 import { createStore, type StoreApi } from "zustand/vanilla";
-import type { ChatMessage, ToolCallInfo } from "../types.js";
+import type { ChatMessage, PermissionRequest, ToolCallInfo } from "../types.js";
 
 interface ChatStoreState {
   sessionId: string | null;
@@ -8,6 +8,7 @@ interface ChatStoreState {
   isStreaming: boolean;
   isThinking: boolean;
   streamingText: string;
+  pendingPermissions: PermissionRequest[];
 }
 
 interface ChatStoreActions {
@@ -23,6 +24,8 @@ interface ChatStoreActions {
   errorToolCall: (toolUseId: string, error: string) => void;
   setStreaming: (v: boolean) => void;
   setThinking: (v: boolean) => void;
+  addPermissionRequest: (request: PermissionRequest) => void;
+  removePermissionRequest: (requestId: string) => void;
   reset: () => void;
 }
 
@@ -50,6 +53,7 @@ export function createChatStore(): ChatStore {
       isStreaming: false,
       isThinking: false,
       streamingText: "",
+      pendingPermissions: [],
 
       setSessionId: (id) =>
         set((s) => {
@@ -128,7 +132,7 @@ export function createChatStore(): ChatStore {
       completeToolCall: (toolUseId, result) =>
         set((s) => {
           const tc = findToolCall(s.messages, toolUseId);
-          if (tc) {
+          if (tc && tc.status !== "error") {
             tc.result = result;
             tc.status = "complete";
           }
@@ -153,6 +157,18 @@ export function createChatStore(): ChatStore {
           s.isThinking = v;
         }),
 
+      addPermissionRequest: (request) =>
+        set((s) => {
+          if (!s.pendingPermissions.some((p) => p.requestId === request.requestId)) {
+            s.pendingPermissions.push(request);
+          }
+        }),
+
+      removePermissionRequest: (requestId) =>
+        set((s) => {
+          s.pendingPermissions = s.pendingPermissions.filter((p) => p.requestId !== requestId);
+        }),
+
       reset: () =>
         set((s) => {
           s.sessionId = null;
@@ -160,6 +176,7 @@ export function createChatStore(): ChatStore {
           s.isStreaming = false;
           s.isThinking = false;
           s.streamingText = "";
+          s.pendingPermissions = [];
         }),
     })),
   );
