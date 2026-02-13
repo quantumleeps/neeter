@@ -13,6 +13,7 @@
     "url": "https://github.com/quantumleeps/fireworks-ai/issues"
   },
   "keywords": ["claude", "agent-sdk", "react", "hono", "sse", "chat-ui", "anthropic"],
+  "packageManager": "pnpm@10.22.0",
   "sideEffects": false,
   "type": "module",
   "exports": {
