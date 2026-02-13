@@ -13,9 +13,15 @@ export function UserQuestionCard({
   onSubmit: (answers: Record<string, string>) => void;
   className?: string;
 }) {
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [otherText, setOtherText] = useState<Record<string, string>>({});
   const otherInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
+  // Auto-focus wrapper so number-key shortcuts work immediately
+  useEffect(() => {
+    wrapperRef.current?.focus();
+  }, []);
 
   const allAnswered = request.questions.every((q) => {
     const val = answers[q.question];
@@ -38,9 +44,7 @@ export function UserQuestionCard({
       if (!multiSelect) return { ...prev, [question]: label };
       const current = prev[question] ?? "";
       const labels = current ? current.split(", ") : [];
-      const next = labels.includes(label)
-        ? labels.filter((l) => l !== label)
-        : [...labels, label];
+      const next = labels.includes(label) ? labels.filter((l) => l !== label) : [...labels, label];
       return { ...prev, [question]: next.join(", ") };
     });
     if (label === OTHER_LABEL) {
@@ -48,24 +52,34 @@ export function UserQuestionCard({
     }
   }
 
-  // Keyboard shortcuts: number keys select options
+  // Keyboard shortcuts: number keys select options, Enter submits
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || (e.target as HTMLElement)?.isContentEditable) {
         return;
       }
-      // Only handle single-question cards for keyboard shortcuts
       if (request.questions.length !== 1) return;
       const q = request.questions[0];
       if (!q.options?.length) return;
+
+      if (e.key === "Enter" && allAnswered) {
+        e.preventDefault();
+        onSubmit(resolvedAnswers());
+        return;
+      }
 
       const totalOptions = q.options.length + 1; // +1 for "Other"
       const num = parseInt(e.key, 10);
       if (num >= 1 && num <= totalOptions) {
         e.preventDefault();
         if (num <= q.options.length) {
-          selectOption(q.question, q.options[num - 1].label, q.multiSelect);
+          if (!q.multiSelect) {
+            // Single-select: submit immediately (matches ApprovalButtons)
+            onSubmit({ [q.question]: q.options[num - 1].label });
+          } else {
+            selectOption(q.question, q.options[num - 1].label, true);
+          }
         } else {
           selectOption(q.question, OTHER_LABEL, q.multiSelect);
         }
@@ -77,8 +91,10 @@ export function UserQuestionCard({
 
   return (
     <div
+      ref={wrapperRef}
+      tabIndex={-1}
       className={cn(
-        "rounded-md border border-blue-500/40 bg-blue-500/5 px-3 py-2.5 text-xs",
+        "rounded-md border border-blue-500/40 bg-blue-500/5 px-3 py-2.5 text-xs focus:outline-none",
         className,
       )}
     >
@@ -97,15 +113,19 @@ export function UserQuestionCard({
 
             {hasOptions && (
               <div className="mt-1.5 flex flex-col gap-1">
-                {q.options!.map((opt, idx) => {
-                  const selected = (answers[q.question] ?? "")
-                    .split(", ")
-                    .includes(opt.label);
+                {q.options?.map((opt, idx) => {
+                  const selected = (answers[q.question] ?? "").split(", ").includes(opt.label);
                   return (
                     <button
                       key={opt.label}
                       type="button"
-                      onClick={() => selectOption(q.question, opt.label, q.multiSelect)}
+                      onClick={() => {
+                        if (!q.multiSelect && isSingleQuestion) {
+                          onSubmit({ [q.question]: opt.label });
+                        } else {
+                          selectOption(q.question, opt.label, q.multiSelect);
+                        }
+                      }}
                       className={cn(
                         "flex items-start gap-2 rounded border px-2 py-1.5 text-left transition-colors",
                         selected
@@ -132,7 +152,7 @@ export function UserQuestionCard({
                 {/* "Other" option */}
                 {(() => {
                   const isOther = answers[q.question] === OTHER_LABEL;
-                  const otherIdx = q.options!.length + 1;
+                  const otherIdx = (q.options?.length ?? 0) + 1;
                   return (
                     <div>
                       <button
@@ -155,7 +175,9 @@ export function UserQuestionCard({
                       </button>
                       {isOther && (
                         <input
-                          ref={(el) => { otherInputRefs.current[q.question] = el; }}
+                          ref={(el) => {
+                            otherInputRefs.current[q.question] = el;
+                          }}
                           type="text"
                           className="mt-1 w-full rounded border border-border bg-background px-2 py-1 text-foreground focus:outline-none focus:ring-1 focus:ring-blue-500/50"
                           placeholder="Type your answer…"
@@ -163,6 +185,12 @@ export function UserQuestionCard({
                           onChange={(e) =>
                             setOtherText((prev) => ({ ...prev, [q.question]: e.target.value }))
                           }
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" && otherText[q.question]?.trim()) {
+                              e.preventDefault();
+                              onSubmit(resolvedAnswers());
+                            }
+                          }}
                         />
                       )}
                     </div>
@@ -177,9 +205,13 @@ export function UserQuestionCard({
                 className="mt-1.5 w-full rounded border border-border bg-background px-2 py-1 text-foreground focus:outline-none focus:ring-1 focus:ring-blue-500/50"
                 placeholder="Type your answer…"
                 value={answers[q.question] ?? ""}
-                onChange={(e) =>
-                  setAnswers((prev) => ({ ...prev, [q.question]: e.target.value }))
-                }
+                onChange={(e) => setAnswers((prev) => ({ ...prev, [q.question]: e.target.value }))}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && (answers[q.question] ?? "").trim()) {
+                    e.preventDefault();
+                    onSubmit(resolvedAnswers());
+                  }
+                }}
               />
             )}
           </div>
