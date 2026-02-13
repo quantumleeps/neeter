@@ -71,6 +71,21 @@ app.route("/", createAgentRouter({ sessions, translator }));
 serve({ fetch: app.fetch, port: 3000 });
 ```
 
+### Extended thinking
+
+Enable Claude's chain-of-thought reasoning by setting `thinking` in your session config:
+
+```typescript
+const sessions = new SessionManager(() => ({
+  context: {},
+  model: "claude-sonnet-4-5-20250929",
+  systemPrompt: "You are a helpful assistant.",
+  thinking: { type: "enabled", budgetTokens: 10000 },
+}));
+```
+
+When enabled, thinking blocks stream to the client as `thinking_delta` SSE events and render as collapsible cards in `MessageList`. Set `{ type: "disabled" }` to explicitly turn thinking off (it's off by default).
+
 This gives you four endpoints:
 
 | Method | Path | Description |
@@ -338,6 +353,7 @@ Drop the `fireworks-ai/theme.css` import and add `@source` — your shadcn theme
 | `PendingPermissions` | Renders pending tool approval and user question cards |
 | `ToolApprovalCard` | Tool approval card with Allow/Deny buttons |
 | `UserQuestionCard` | Structured question card with option selection |
+| `ThinkingBlock` | Collapsible card displaying extended thinking text |
 | `ThinkingIndicator` | Animated dots shown while agent is generating |
 | `CollapsibleCard` | Expandable card wrapper |
 | `StatusDot` | Phase-colored status indicator |
@@ -351,7 +367,7 @@ Drop the `fireworks-ai/theme.css` import and add `@source` — your shadcn theme
 | Type | Description |
 |------|-------------|
 | `SSEEvent` | `{ event: string, data: string }` |
-| `ChatMessage` | `{ id, role, content, toolCalls? }` |
+| `ChatMessage` | `{ id, role, content, thinking?, toolCalls? }` |
 | `ToolCallInfo` | `{ id, name, input, partialInput?, result?, error?, status }` |
 | `ToolCallPhase` | `"pending" \| "streaming_input" \| "running" \| "complete" \| "error"` |
 | `WidgetProps<TResult>` | Props passed to widget components |
@@ -374,6 +390,8 @@ Events emitted by the server, handled automatically by `useAgent`:
 | Event | Payload | Description |
 |-------|---------|-------------|
 | `message_start` | `{}` | Agent began generating a response |
+| `thinking_start` | `{}` | Extended thinking block began |
+| `thinking_delta` | `{ text }` | Streaming thinking text chunk |
 | `text_delta` | `{ text }` | Streaming text chunk |
 | `tool_start` | `{ id, name }` | Agent began calling a tool |
 | `tool_input_delta` | `{ id, partialJson }` | Streaming tool input JSON |

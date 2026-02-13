@@ -8,6 +8,7 @@ interface ChatStoreState {
   isStreaming: boolean;
   isThinking: boolean;
   streamingText: string;
+  streamingThinking: string;
   pendingPermissions: PermissionRequest[];
 }
 
@@ -15,7 +16,9 @@ interface ChatStoreActions {
   setSessionId: (id: string) => void;
   addUserMessage: (text: string) => void;
   appendStreamingText: (text: string) => void;
+  appendStreamingThinking: (text: string) => void;
   flushStreamingText: () => void;
+  flushStreamingThinking: () => void;
   addSystemMessage: (text: string) => void;
   startToolCall: (toolUseId: string, name: string) => void;
   appendToolInput: (toolUseId: string, partialJson: string) => void;
@@ -53,6 +56,7 @@ export function createChatStore(): ChatStore {
       isStreaming: false,
       isThinking: false,
       streamingText: "",
+      streamingThinking: "",
       pendingPermissions: [],
 
       setSessionId: (id) =>
@@ -81,6 +85,29 @@ export function createChatStore(): ChatStore {
       appendStreamingText: (text) =>
         set((s) => {
           s.streamingText += text;
+        }),
+
+      appendStreamingThinking: (text) =>
+        set((s) => {
+          s.streamingThinking += text;
+        }),
+
+      flushStreamingThinking: () =>
+        set((s) => {
+          if (s.streamingThinking) {
+            const last = s.messages[s.messages.length - 1];
+            if (last?.role === "assistant" && !last.toolCalls?.length) {
+              last.thinking = (last.thinking ?? "") + s.streamingThinking;
+            } else {
+              s.messages.push({
+                id: `msg-${++nextId}`,
+                role: "assistant",
+                content: "",
+                thinking: s.streamingThinking,
+              });
+            }
+            s.streamingThinking = "";
+          }
         }),
 
       flushStreamingText: () =>
@@ -176,6 +203,7 @@ export function createChatStore(): ChatStore {
           s.isStreaming = false;
           s.isThinking = false;
           s.streamingText = "";
+          s.streamingThinking = "";
           s.pendingPermissions = [];
         }),
     })),

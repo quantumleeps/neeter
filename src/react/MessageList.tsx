@@ -3,19 +3,21 @@ import { useChatStore } from "./AgentProvider.js";
 import { cn } from "./cn.js";
 import { PendingPermissions } from "./PendingPermissions.js";
 import { TextMessage } from "./TextMessage.js";
+import { ThinkingBlock } from "./ThinkingBlock.js";
 import { ThinkingIndicator } from "./ThinkingIndicator.js";
 import { ToolCallCard } from "./ToolCallCard.js";
 
 export function MessageList({ className }: { className?: string }) {
   const messages = useChatStore((s) => s.messages);
   const streamingText = useChatStore((s) => s.streamingText);
+  const streamingThinking = useChatStore((s) => s.streamingThinking);
   const isThinking = useChatStore((s) => s.isThinking);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: scroll on content changes
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, streamingText, isThinking]);
+  }, [messages, streamingText, streamingThinking, isThinking]);
 
   return (
     <div className={cn("flex-1 overflow-y-auto", className)}>
@@ -37,17 +39,19 @@ export function MessageList({ className }: { className?: string }) {
               </div>
             );
           }
-          if (msg.content) {
+          if (msg.content || msg.thinking) {
             return (
-              <TextMessage
-                key={msg.id}
-                role={msg.role as "user" | "assistant"}
-                content={msg.content}
-              />
+              <div key={msg.id} className="flex flex-col gap-1.5">
+                {msg.thinking && <ThinkingBlock thinking={msg.thinking} />}
+                {msg.content && (
+                  <TextMessage role={msg.role as "user" | "assistant"} content={msg.content} />
+                )}
+              </div>
             );
           }
           return null;
         })}
+        {streamingThinking && <ThinkingBlock thinking={streamingThinking} streaming />}
         {streamingText && <TextMessage role="assistant" content={streamingText} />}
         <PendingPermissions />
         {isThinking && <ThinkingIndicator />}

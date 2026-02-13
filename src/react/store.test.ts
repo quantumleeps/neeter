@@ -121,6 +121,74 @@ describe("ChatStore", () => {
     expect(s.streamingText).toBe("");
   });
 
+  it("appendStreamingThinking + flushStreamingThinking stores thinking on assistant message", () => {
+    const store = createChatStore();
+    store.getState().appendStreamingText("response");
+    store.getState().flushStreamingText();
+
+    store.getState().appendStreamingThinking("Let me ");
+    store.getState().appendStreamingThinking("think...");
+    expect(store.getState().streamingThinking).toBe("Let me think...");
+
+    store.getState().flushStreamingThinking();
+    const { messages, streamingThinking } = store.getState();
+    expect(streamingThinking).toBe("");
+    expect(messages[0].thinking).toBe("Let me think...");
+  });
+
+  it("flushStreamingThinking creates assistant message if none exists", () => {
+    const store = createChatStore();
+    store.getState().appendStreamingThinking("thinking first");
+    store.getState().flushStreamingThinking();
+
+    const { messages } = store.getState();
+    expect(messages).toHaveLength(1);
+    expect(messages[0].role).toBe("assistant");
+    expect(messages[0].thinking).toBe("thinking first");
+    expect(messages[0].content).toBe("");
+  });
+
+  it("flushStreamingThinking creates new message instead of appending to tool call message", () => {
+    const store = createChatStore();
+    // Turn 1: thinking → text → tool
+    store.getState().appendStreamingThinking("Turn 1 thinking");
+    store.getState().flushStreamingThinking();
+    store.getState().appendStreamingText("I'll use a tool.");
+    store.getState().flushStreamingText();
+    store.getState().startToolCall("tool-1", "search");
+    store.getState().completeToolCall("tool-1", "result");
+
+    // Turn 2: thinking arrives after tool call message
+    store.getState().appendStreamingThinking("Turn 2 thinking");
+    store.getState().flushStreamingThinking();
+
+    const { messages } = store.getState();
+    expect(messages).toHaveLength(3);
+    // Turn 1 text+thinking message
+    expect(messages[0].thinking).toBe("Turn 1 thinking");
+    expect(messages[0].content).toBe("I'll use a tool.");
+    expect(messages[0].toolCalls).toBeUndefined();
+    // Tool call message — no thinking attached
+    expect(messages[1].toolCalls).toHaveLength(1);
+    expect(messages[1].thinking).toBeUndefined();
+    // Turn 2 thinking in its own renderable message
+    expect(messages[2].thinking).toBe("Turn 2 thinking");
+    expect(messages[2].toolCalls).toBeUndefined();
+  });
+
+  it("flushStreamingThinking is a no-op when streamingThinking is empty", () => {
+    const store = createChatStore();
+    store.getState().flushStreamingThinking();
+    expect(store.getState().messages).toHaveLength(0);
+  });
+
+  it("reset clears streamingThinking", () => {
+    const store = createChatStore();
+    store.getState().appendStreamingThinking("thinking");
+    store.getState().reset();
+    expect(store.getState().streamingThinking).toBe("");
+  });
+
   it("addSystemMessage appends a system message", () => {
     const store = createChatStore();
     store.getState().addSystemMessage("Session ended");

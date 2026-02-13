@@ -9,6 +9,7 @@ export interface TranslatorConfig<TCtx> {
 export class MessageTranslator<TCtx> {
   private config: TranslatorConfig<TCtx>;
   private toolNames = new Map<string, string>();
+  private hadStreamThinking = false;
 
   constructor(config?: TranslatorConfig<TCtx>) {
     this.config = config ?? {};
@@ -25,6 +26,7 @@ export class MessageTranslator<TCtx> {
 
         switch (event.type) {
           case "message_start": {
+            this.hadStreamThinking = false;
             events.push({ event: "message_start", data: "{}" });
             break;
           }
@@ -40,6 +42,10 @@ export class MessageTranslator<TCtx> {
                   event: "tool_start",
                   data: JSON.stringify({ id, name }),
                 });
+                break;
+              }
+              case "thinking": {
+                events.push({ event: "thinking_start", data: "{}" });
                 break;
               }
               case "web_search_tool_result": {
@@ -62,7 +68,13 @@ export class MessageTranslator<TCtx> {
           }
           case "content_block_delta": {
             const delta = event.delta as Record<string, unknown>;
-            if (delta.type === "text_delta" && typeof delta.text === "string") {
+            if (delta.type === "thinking_delta" && typeof delta.thinking === "string") {
+              this.hadStreamThinking = true;
+              events.push({
+                event: "thinking_delta",
+                data: JSON.stringify({ text: delta.thinking }),
+              });
+            } else if (delta.type === "text_delta" && typeof delta.text === "string") {
               events.push({
                 event: "text_delta",
                 data: JSON.stringify({ text: delta.text }),
@@ -90,6 +102,15 @@ export class MessageTranslator<TCtx> {
         if (msg?.content) {
           for (const block of msg.content) {
             switch (block.type) {
+              case "thinking": {
+                if (!this.hadStreamThinking && typeof block.thinking === "string") {
+                  events.push({
+                    event: "thinking_delta",
+                    data: JSON.stringify({ text: block.thinking }),
+                  });
+                }
+                break;
+              }
               case "tool_use":
               case "server_tool_use": {
                 const name = block.name as string;

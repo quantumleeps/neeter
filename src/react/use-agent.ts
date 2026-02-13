@@ -43,14 +43,21 @@ export function useAgent(store: ChatStore, config?: UseAgentConfig): UseAgentRet
       store.getState().setThinking(true);
     });
 
+    es.addEventListener("thinking_delta", (e) => {
+      const { text } = JSON.parse(e.data);
+      store.getState().appendStreamingThinking(text);
+    });
+
     es.addEventListener("text_delta", (e) => {
       store.getState().setThinking(false);
+      store.getState().flushStreamingThinking();
       const { text } = JSON.parse(e.data);
       store.getState().appendStreamingText(text);
     });
 
     es.addEventListener("tool_start", (e) => {
       store.getState().setThinking(false);
+      store.getState().flushStreamingThinking();
       store.getState().flushStreamingText();
       const { id, name } = JSON.parse(e.data);
       store.getState().startToolCall(id, name);
@@ -81,6 +88,7 @@ export function useAgent(store: ChatStore, config?: UseAgentConfig): UseAgentRet
     });
 
     es.addEventListener("session_error", (e) => {
+      store.getState().flushStreamingThinking();
       store.getState().flushStreamingText();
       store.getState().setThinking(false);
       const { subtype } = JSON.parse(e.data);
@@ -89,6 +97,7 @@ export function useAgent(store: ChatStore, config?: UseAgentConfig): UseAgentRet
     });
 
     es.addEventListener("turn_complete", () => {
+      store.getState().flushStreamingThinking();
       store.getState().flushStreamingText();
       store.getState().setThinking(false);
       store.getState().setStreaming(false);
@@ -96,6 +105,7 @@ export function useAgent(store: ChatStore, config?: UseAgentConfig): UseAgentRet
 
     es.addEventListener("error", () => {
       if (es.readyState === EventSource.CLOSED) {
+        store.getState().flushStreamingThinking();
         store.getState().flushStreamingText();
         store.getState().setStreaming(false);
       }

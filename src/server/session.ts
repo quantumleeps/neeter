@@ -23,6 +23,7 @@ export interface SessionInit<TCtx> {
   allowedTools?: string[];
   maxTurns?: number;
   permissionMode?: "default" | "acceptEdits" | "plan" | "bypassPermissions";
+  thinking?: { type: "enabled"; budgetTokens: number } | { type: "disabled" };
 }
 
 export interface Session<TCtx> {
@@ -108,6 +109,7 @@ export class SessionManager<TCtx> {
         includePartialMessages: true,
         abortController,
         ...(canUseTool ? { canUseTool } : {}),
+        ...(init.thinking ? { thinking: init.thinking } : {}),
       },
     });
 
