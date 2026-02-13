@@ -3,10 +3,10 @@ import { cn } from "./cn.js";
 
 const phaseClasses: Record<ToolCallPhase, string> = {
   pending: "bg-muted-foreground/40",
-  streaming_input: "bg-yellow-500 animate-pulse",
-  running: "bg-yellow-500 animate-pulse",
-  complete: "bg-green-500",
-  error: "bg-red-500",
+  streaming_input: "bg-warning animate-pulse",
+  running: "bg-warning animate-pulse",
+  complete: "bg-success",
+  error: "bg-destructive",
 };
 
 export function StatusDot({ status, className }: { status: ToolCallPhase; className?: string }) {
@@ -17,7 +17,7 @@ export function PulsingDot({ className }: { className?: string }) {
   return (
     <span
       className={cn(
-        "inline-block h-2 w-2 shrink-0 rounded-full bg-yellow-500 animate-pulse",
+        "inline-block h-2 w-2 shrink-0 rounded-full bg-warning animate-pulse",
         className,
       )}
     />

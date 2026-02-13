@@ -74,7 +74,7 @@ export function ToolCallCard({
     return (
       <div
         className={cn(
-          "rounded-md border border-yellow-500/40 bg-yellow-500/5 px-3 py-2.5 text-xs",
+          "rounded-md border border-warning/40 bg-warning/5 px-3 py-2.5 text-xs",
           className,
         )}
       >

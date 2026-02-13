@@ -94,7 +94,7 @@ export function UserQuestionCard({
       ref={wrapperRef}
       tabIndex={-1}
       className={cn(
-        "rounded-md border border-blue-500/40 bg-blue-500/5 px-3 py-2.5 text-xs focus:outline-none",
+        "rounded-md border border-info/40 bg-info/5 px-3 py-2.5 text-xs focus:outline-none",
         className,
       )}
     >
@@ -129,7 +129,7 @@ export function UserQuestionCard({
                       className={cn(
                         "flex items-start gap-2 rounded border px-2 py-1.5 text-left transition-colors",
                         selected
-                          ? "border-blue-500 bg-blue-500/15 text-foreground ring-1 ring-blue-500/30"
+                          ? "border-info bg-info/15 text-foreground ring-1 ring-info/30"
                           : "border-border text-muted-foreground hover:bg-accent",
                       )}
                     >
@@ -161,7 +161,7 @@ export function UserQuestionCard({
                         className={cn(
                           "flex w-full items-start gap-2 rounded border px-2 py-1.5 text-left transition-colors",
                           isOther
-                            ? "border-blue-500 bg-blue-500/15 text-foreground ring-1 ring-blue-500/30"
+                            ? "border-info bg-info/15 text-foreground ring-1 ring-info/30"
                             : "border-border text-muted-foreground hover:bg-accent",
                         )}
                       >
@@ -179,7 +179,7 @@ export function UserQuestionCard({
                             otherInputRefs.current[q.question] = el;
                           }}
                           type="text"
-                          className="mt-1 w-full rounded border border-border bg-background px-2 py-1 text-foreground focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+                          className="mt-1 w-full rounded border border-border bg-background px-2 py-1 text-foreground focus:outline-none focus:ring-1 focus:ring-info/50"
                           placeholder="Type your answer…"
                           value={otherText[q.question] ?? ""}
                           onChange={(e) =>
@@ -202,7 +202,7 @@ export function UserQuestionCard({
             {!hasOptions && (
               <input
                 type="text"
-                className="mt-1.5 w-full rounded border border-border bg-background px-2 py-1 text-foreground focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+                className="mt-1.5 w-full rounded border border-border bg-background px-2 py-1 text-foreground focus:outline-none focus:ring-1 focus:ring-info/50"
                 placeholder="Type your answer…"
                 value={answers[q.question] ?? ""}
                 onChange={(e) => setAnswers((prev) => ({ ...prev, [q.question]: e.target.value }))}
