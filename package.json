@@ -1,6 +1,6 @@
 {
   "name": "fireworks-ai",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "React + Hono toolkit for building chat UIs on top of the Claude Agent SDK",
   "license": "MIT",
   "author": "Dan Leeper",
