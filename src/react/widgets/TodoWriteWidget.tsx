@@ -22,6 +22,7 @@ function TodoList({ todos }: { todos: TodoItem[] }) {
   return (
     <div className="space-y-0.5 text-xs">
       {todos.map((todo, i) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: todo items lack stable IDs
         <div key={i} className="flex items-start gap-2">
           <span className="shrink-0 w-4 text-center">
             {todo.status === "completed" ? (

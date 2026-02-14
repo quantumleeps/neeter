@@ -46,7 +46,9 @@ export function UserQuestionCard({
       const current = prev[question] ?? [];
       return {
         ...prev,
-        [question]: current.includes(label) ? current.filter((l) => l !== label) : [...current, label],
+        [question]: current.includes(label)
+          ? current.filter((l) => l !== label)
+          : [...current, label],
       };
     });
     if (label === OTHER_LABEL) {

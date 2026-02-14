@@ -7,9 +7,7 @@ function BashInputRenderer({ input }: { input: Record<string, unknown> }) {
   if (!command) return null;
   return (
     <div className="mt-1.5 space-y-1">
-      {description && (
-        <div className="text-xs text-muted-foreground">{description}</div>
-      )}
+      {description && <div className="text-xs text-muted-foreground">{description}</div>}
       <pre className="text-[11px] leading-snug text-muted-foreground bg-accent rounded px-2 py-1 overflow-x-auto whitespace-pre-wrap break-all">
         <code>{command}</code>
       </pre>
@@ -38,7 +36,15 @@ function BashWidget({ result, input, phase }: WidgetProps<string>) {
   return (
     <div className="py-1 text-xs">
       <pre className="leading-snug text-foreground bg-accent rounded px-2 py-1.5 overflow-x-auto whitespace-pre-wrap break-all max-h-[300px] overflow-y-auto">
-        <code>{command && <span className="text-muted-foreground">$ {command}{"\n"}</span>}{result}</code>
+        <code>
+          {command && (
+            <span className="text-muted-foreground">
+              $ {command}
+              {"\n"}
+            </span>
+          )}
+          {result}
+        </code>
       </pre>
     </div>
   );

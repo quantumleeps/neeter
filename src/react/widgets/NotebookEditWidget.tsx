@@ -20,10 +20,7 @@ function NotebookEditInputRenderer({ input }: { input: Record<string, unknown> }
   const newSource = typeof input.new_source === "string" ? input.new_source : null;
   if (!notebookPath) return null;
   const cellRef = cellId ?? (cellNumber != null ? `cell ${cellNumber}` : null);
-  const cellLabel =
-    cellRef && editMode === "insert"
-      ? `after ${cellRef}`
-      : cellRef;
+  const cellLabel = cellRef && editMode === "insert" ? `after ${cellRef}` : cellRef;
   return (
     <div className="mt-1.5 space-y-1">
       <div className="text-xs text-muted-foreground">
@@ -50,7 +47,9 @@ function NotebookEditWidget({ input, phase }: WidgetProps<string>) {
   if (phase === "running" || phase === "pending") {
     return (
       <div className="flex items-center gap-2 text-xs text-muted-foreground py-1">
-        <span className="animate-pulse">Editing {notebookPath ? basename(notebookPath) : "notebook"}&hellip;</span>
+        <span className="animate-pulse">
+          Editing {notebookPath ? basename(notebookPath) : "notebook"}&hellip;
+        </span>
       </div>
     );
   }

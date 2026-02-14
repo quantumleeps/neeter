@@ -27,7 +27,9 @@ function WriteWidget({ input, phase }: WidgetProps<string>) {
   if (phase === "running" || phase === "pending") {
     return (
       <div className="flex items-center gap-2 text-xs text-muted-foreground py-1">
-        <span className="animate-pulse">Writing {filePath ? basename(filePath) : "file"}&hellip;</span>
+        <span className="animate-pulse">
+          Writing {filePath ? basename(filePath) : "file"}&hellip;
+        </span>
       </div>
     );
   }

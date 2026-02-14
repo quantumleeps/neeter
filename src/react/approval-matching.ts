@@ -1,4 +1,9 @@
-import type { ChatMessage, PermissionRequest, ToolApprovalRequest, ToolCallInfo } from "../types.js";
+import type {
+  ChatMessage,
+  PermissionRequest,
+  ToolApprovalRequest,
+  ToolCallInfo,
+} from "../types.js";
 
 /**
  * Find the pending approval that matches a specific tool call.

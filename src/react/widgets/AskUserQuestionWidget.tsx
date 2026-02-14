@@ -11,8 +11,7 @@ function parseAnswers(result: unknown): Record<string, string> | null {
   const answers: Record<string, string> = {};
   // Format: "question"="answer"
   const re = /"(.+?)"="(.+?)"/g;
-  let match;
-  while ((match = re.exec(result)) !== null) {
+  for (let match = re.exec(result); match !== null; match = re.exec(result)) {
     answers[match[1]] = match[2];
   }
   if (Object.keys(answers).length === 0) return null;
@@ -31,9 +30,7 @@ function AskUserQuestionWidget({ input, result }: WidgetProps<string>) {
         return (
           <div key={q.question}>
             <span className="text-muted-foreground">{q.question}</span>
-            {answer && (
-              <span className="ml-1.5 font-medium text-foreground">{answer}</span>
-            )}
+            {answer && <span className="ml-1.5 font-medium text-foreground">{answer}</span>}
           </div>
         );
       })}
