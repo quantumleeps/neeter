@@ -13,5 +13,19 @@ dist/
 .env
 .env.*
 
+# secrets & credentials
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.json
+service-account*.json
+*secret*
+!*secret*.ts
+
+# data files
+*.sqlite
+*.db
+
 # claude
 .claude/
