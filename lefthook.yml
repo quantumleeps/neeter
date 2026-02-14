@@ -1,0 +1,31 @@
+pre-commit:
+  parallel: true
+  commands:
+    biome:
+      glob: "*.{ts,tsx,js,jsx,json,css}"
+      run: pnpm biome check --no-errors-on-unmatched --files-ignore-unknown=true {staged_files}
+    gitleaks:
+      skip:
+        - run: "! command -v gitleaks >/dev/null 2>&1"
+      run: gitleaks protect --staged --config .gitleaks.toml
+    large-files:
+      glob: "!pnpm-lock.yaml"
+      run: |
+        for file in {staged_files}; do
+          size=$(wc -c < "$file" 2>/dev/null || echo 0)
+          if [ "$size" -gt 512000 ]; then
+            echo "Blocked: $file is $(( size / 1024 ))KB (max 500KB)"
+            exit 1
+          fi
+        done
+    private-key:
+      glob: "*.{pem,key,p12,pfx}"
+      run: |
+        echo "Blocked: private key file(s) staged: {staged_files}"
+        exit 1
+    merge-conflict:
+      glob: "*.{ts,tsx,js,jsx,json,yaml,yml,md,css}"
+      run: grep -rlE '^(<{7}|>{7}|={7})' {staged_files} && echo "Merge conflict markers found" && exit 1 || true
+    pii-check:
+      glob: "!*.{md,txt,lock}"
+      run: bash scripts/check-pii.sh

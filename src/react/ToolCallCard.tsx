@@ -1,8 +1,8 @@
 import type { ToolCallInfo, WidgetProps } from "../types.js";
 import { useAgentContext, useChatStore } from "./AgentProvider.js";
 import { ApprovalButtons } from "./ApprovalButtons.js";
-import { CollapsibleCard } from "./CollapsibleCard.js";
 import { findMatchingApproval } from "./approval-matching.js";
+import { CollapsibleCard } from "./CollapsibleCard.js";
 import { cn } from "./cn.js";
 import { getWidget, stripMcpPrefix } from "./registry.js";
 import { PulsingDot, StatusDot } from "./StatusDot.js";

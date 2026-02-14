@@ -352,6 +352,10 @@ Events emitted by the server, handled automatically by `useAgent`:
 | `custom` | `{ name, value }` | App-specific event from `onToolResult` |
 | `session_error` | `{ subtype }` | Session ended with error |
 
+## Development
+
+See [docs/development.md](docs/development.md) for local setup, pre-commit hooks, and CI.
+
 ## License
 
 MIT

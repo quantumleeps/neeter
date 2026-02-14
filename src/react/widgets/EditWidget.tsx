@@ -16,12 +16,26 @@ function EditInputRenderer({ input }: { input: Record<string, unknown> }) {
       <div className="text-[11px] leading-snug rounded overflow-hidden border border-border">
         {oldStr && (
           <pre className="bg-red-500/10 text-red-700 dark:text-red-400 px-2 py-1 overflow-x-auto whitespace-pre-wrap break-all">
-            <code>{oldStr.split("\n").map((line, i) => <span key={i}>{i > 0 && "\n"}- {line}</span>)}</code>
+            <code>
+              {oldStr.split("\n").map((line, i) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: static split lines
+                <span key={i}>
+                  {i > 0 && "\n"}- {line}
+                </span>
+              ))}
+            </code>
           </pre>
         )}
         {newStr && (
           <pre className="bg-green-500/10 text-green-700 dark:text-green-400 px-2 py-1 overflow-x-auto whitespace-pre-wrap break-all">
-            <code>{newStr.split("\n").map((line, i) => <span key={i}>{i > 0 && "\n"}+ {line}</span>)}</code>
+            <code>
+              {newStr.split("\n").map((line, i) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: static split lines
+                <span key={i}>
+                  {i > 0 && "\n"}+ {line}
+                </span>
+              ))}
+            </code>
           </pre>
         )}
       </div>
@@ -35,16 +49,16 @@ function EditWidget({ result, input, phase }: WidgetProps<string>) {
   if (phase === "running" || phase === "pending") {
     return (
       <div className="flex items-center gap-2 text-xs text-muted-foreground py-1">
-        <span className="animate-pulse">Editing {filePath ? basename(filePath) : "file"}&hellip;</span>
+        <span className="animate-pulse">
+          Editing {filePath ? basename(filePath) : "file"}&hellip;
+        </span>
       </div>
     );
   }
 
   if (typeof result !== "string" || !result) return null;
 
-  return (
-    <div className="py-1 text-xs text-muted-foreground">{result}</div>
-  );
+  return <div className="py-1 text-xs text-muted-foreground">{result}</div>;
 }
 
 registerWidget<string>({

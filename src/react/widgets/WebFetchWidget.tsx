@@ -41,11 +41,7 @@ function WebFetchInputRenderer({ input }: { input: Record<string, unknown> }) {
         />
         <span className="truncate">{domain(url)}</span>
       </a>
-      {prompt && (
-        <div className="text-xs italic text-muted-foreground">
-          &ldquo;{prompt}&rdquo;
-        </div>
-      )}
+      {prompt && <div className="text-xs italic text-muted-foreground">&ldquo;{prompt}&rdquo;</div>}
     </div>
   );
 }
@@ -55,9 +51,7 @@ function WebFetchWidget({ result, input, phase }: WidgetProps<string>) {
     const url = typeof input.url === "string" ? input.url : null;
     return (
       <div className="flex items-center gap-2 text-xs text-muted-foreground py-1">
-        <span className="animate-pulse">
-          Fetching {url ? domain(url) : "page"}&hellip;
-        </span>
+        <span className="animate-pulse">Fetching {url ? domain(url) : "page"}&hellip;</span>
       </div>
     );
   }

@@ -61,11 +61,7 @@ function domain(url: string) {
 function WebSearchInputRenderer({ input }: { input: Record<string, unknown> }) {
   const query = typeof input.query === "string" ? input.query : null;
   if (!query) return null;
-  return (
-    <div className="mt-1.5 text-xs italic text-muted-foreground">
-      &ldquo;{query}&rdquo;
-    </div>
-  );
+  return <div className="mt-1.5 text-xs italic text-muted-foreground">&ldquo;{query}&rdquo;</div>;
 }
 
 function WebSearchWidget({ result, phase }: WidgetProps<string>) {
@@ -120,9 +116,7 @@ function WebSearchWidget({ result, phase }: WidgetProps<string>) {
   return (
     <div className="py-1 space-y-0.5">
       <div className="relative">
-        <div className="flex flex-nowrap gap-1.5 overflow-hidden max-h-[22px]">
-          {pills}
-        </div>
+        <div className="flex flex-nowrap gap-1.5 overflow-hidden max-h-[22px]">{pills}</div>
         <div className="pointer-events-none absolute inset-y-0 right-0 w-12 bg-gradient-to-l from-accent/50 to-transparent" />
       </div>
       <button

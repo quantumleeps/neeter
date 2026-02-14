@@ -24,9 +24,7 @@ function shortPath(filePath: string): string {
 function ReadInputRenderer({ input }: { input: Record<string, unknown> }) {
   const filePath = typeof input.file_path === "string" ? input.file_path : null;
   if (!filePath) return null;
-  return (
-    <div className="mt-1.5 text-xs text-muted-foreground font-mono truncate">{filePath}</div>
-  );
+  return <div className="mt-1.5 text-xs text-muted-foreground font-mono truncate">{filePath}</div>;
 }
 
 function ReadWidget({ result, input, phase }: WidgetProps<string>) {
@@ -35,7 +33,9 @@ function ReadWidget({ result, input, phase }: WidgetProps<string>) {
   if (phase === "running" || phase === "pending") {
     return (
       <div className="flex items-center gap-2 text-xs text-muted-foreground py-1">
-        <span className="animate-pulse">Reading {filePath ? shortPath(filePath) : "file"}&hellip;</span>
+        <span className="animate-pulse">
+          Reading {filePath ? shortPath(filePath) : "file"}&hellip;
+        </span>
       </div>
     );
   }

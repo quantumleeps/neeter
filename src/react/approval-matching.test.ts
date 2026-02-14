@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import type { ChatMessage, PermissionRequest, ToolApprovalRequest, ToolCallInfo } from "../types.js";
+import type {
+  ChatMessage,
+  PermissionRequest,
+  ToolApprovalRequest,
+  ToolCallInfo,
+} from "../types.js";
 import { findMatchingApproval, isApprovalClaimedByToolCall } from "./approval-matching.js";
 
 function approval(
@@ -53,9 +58,7 @@ describe("findMatchingApproval", () => {
   });
 
   it("falls back to toolName when toolUseId is absent", () => {
-    const approvals: PermissionRequest[] = [
-      approval({ requestId: "r1", toolName: "Bash" }),
-    ];
+    const approvals: PermissionRequest[] = [approval({ requestId: "r1", toolName: "Bash" })];
     const tc = toolCall({ id: "tu-99", name: "Bash" });
 
     expect(findMatchingApproval(approvals, tc)?.requestId).toBe("r1");
@@ -173,7 +176,7 @@ describe("isApprovalClaimedByToolCall", () => {
     ];
 
     expect(isApprovalClaimedByToolCall(req1, messages)).toBe(false); // complete = unclaimed
-    expect(isApprovalClaimedByToolCall(req2, messages)).toBe(true);  // running = claimed
-    expect(isApprovalClaimedByToolCall(req3, messages)).toBe(true);  // pending = claimed
+    expect(isApprovalClaimedByToolCall(req2, messages)).toBe(true); // running = claimed
+    expect(isApprovalClaimedByToolCall(req3, messages)).toBe(true); // pending = claimed
   });
 });

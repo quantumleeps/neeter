@@ -8,7 +8,10 @@ function GlobInputRenderer({ input }: { input: Record<string, unknown> }) {
   return (
     <div className="mt-1.5 space-y-1">
       <pre className="text-[11px] leading-snug text-muted-foreground bg-accent rounded px-2 py-1 overflow-x-auto whitespace-pre-wrap break-all">
-        <code>{pattern}{path ? ` in ${path}` : ""}</code>
+        <code>
+          {pattern}
+          {path ? ` in ${path}` : ""}
+        </code>
       </pre>
     </div>
   );
@@ -31,7 +34,9 @@ function GlobWidget({ result, input, phase }: WidgetProps<string>) {
 
   return (
     <div className="py-1 text-xs">
-      <div className="text-muted-foreground mb-1">{lines.length} {lines.length === 1 ? "match" : "matches"}</div>
+      <div className="text-muted-foreground mb-1">
+        {lines.length} {lines.length === 1 ? "match" : "matches"}
+      </div>
       <pre className="leading-snug text-foreground bg-accent rounded px-2 py-1.5 overflow-x-auto whitespace-pre-wrap break-all max-h-[300px] overflow-y-auto">
         <code>{lines.join("\n")}</code>
       </pre>
