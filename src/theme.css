@@ -4,11 +4,11 @@
  * Provides the CSS variable bridge (via @theme inline) and a neutral color
  * palette so fireworks-ai components render correctly out of the box.
  *
- * If your app already uses shadcn/ui, you DON'T need this file — your existing
- * shadcn/tailwind.css and color variables are already compatible. Only import
- * this if you're NOT using shadcn.
+ * If your app already uses shadcn/ui you don't need this file — fireworks-ai
+ * components use only standard shadcn variables plus Tailwind's built-in
+ * color palette (amber, emerald, blue) for status indicators.
  *
- * Usage:
+ * Usage (non-shadcn apps):
  *   @import "fireworks-ai/theme.css";
  */
 
