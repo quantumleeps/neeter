@@ -7,6 +7,7 @@ import "./widgets/GrepWidget.js";
 import "./widgets/ReadWidget.js";
 import "./widgets/WebFetchWidget.js";
 import "./widgets/WebSearchWidget.js";
+import "./widgets/WriteWidget.js";
 
 export type {
   ChatMessage,
