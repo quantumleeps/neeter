@@ -212,63 +212,12 @@ Each event is a typed `CustomEvent<T>` with `name` and `value` fields.
 
 ### Widgets
 
-Register custom components for tool results. When a tool completes, `ToolCallCard` looks up the matching widget and renders it with typed props.
+When you add tools to your `SessionManager`, fireworks-ai automatically renders them with purpose-built widgets — diff views for edits, code blocks for file reads, expandable link pills for web searches, and so on. No configuration needed.
 
-```tsx
-import { registerWidget, type WidgetProps } from "fireworks-ai/react";
+- **[Built-in widgets](docs/built-in-widgets.md)** — what ships out of the box for the 11 supported SDK tools, how approval previews work, and how to extend or override them
+- **[Custom widgets](docs/custom-widgets.md)** — register your own components for MCP tools or app-specific rendering
 
-interface SearchResult {
-  query: string;
-  results: { title: string; url: string }[];
-}
-
-function SearchWidget({ result }: WidgetProps<SearchResult>) {
-  if (!result) return null;
-  return (
-    <ul>
-      {result.results.map((r) => (
-        <li key={r.url}>
-          <a href={r.url}>{r.title}</a>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-registerWidget({
-  toolName: "search",
-  label: "Search",
-  richLabel: (r) => `Search: ${r.query}`,
-  component: SearchWidget,
-});
-```
-
-`toolName` matches the short name — MCP prefixes (`mcp__server__`) are stripped automatically. Call `registerWidget` at module scope; barrel-import your widgets directory so registrations run before render.
-
-Tool calls without a registered widget show a minimal status indicator.
-
-#### Built-in widgets
-
-fireworks-ai ships two built-in widgets that auto-register on import:
-
-- **WebSearchWidget** — renders web search results as link pills with favicons
-- **AskUserQuestionWidget** — displays completed question/answer pairs from `AskUserQuestion`
-
-These register automatically when you import from `fireworks-ai/react`.
-
-#### Input preview
-
-Widgets can provide an `inputRenderer` to customize how tool input is displayed in the approval card (when `permissionMode` is not `"bypassPermissions"`):
-
-```tsx
-registerWidget({
-  toolName: "web_search",
-  label: "Web Search",
-  richLabel: (result, input) => `Search: ${input.query}`,
-  inputRenderer: ({ input }) => <span>Searching: {input.query as string}</span>,
-  component: WebSearchWidget,
-});
-```
+Tool calls without a registered widget fall back to a minimal status indicator.
 
 ### Tool call lifecycle
 
@@ -377,7 +326,7 @@ Drop the `fireworks-ai/theme.css` import and add `@source` — your shadcn theme
 | `CustomEvent<T>` | `{ name: string, value: T }` — structured app-level event |
 | `PermissionRequest` | `ToolApprovalRequest \| UserQuestionRequest` — pending permission |
 | `PermissionResponse` | `ToolApprovalResponse \| UserQuestionResponse` — user's answer |
-| `ToolApprovalRequest` | `{ kind, requestId, toolName, input, description? }` |
+| `ToolApprovalRequest` | `{ kind, requestId, toolName, toolUseId?, input, description? }` |
 | `ToolApprovalResponse` | `{ kind, requestId, behavior: "allow" \| "deny", message? }` |
 | `UserQuestion` | `{ question, header?, options?, multiSelect? }` |
 | `UserQuestionRequest` | `{ kind, requestId, questions: UserQuestion[] }` |
