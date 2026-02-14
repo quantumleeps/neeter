@@ -1,19 +1,19 @@
 /*
- * fireworks-ai/theme.css — default theme for fireworks-ai components.
+ * neeter/theme.css — default theme for neeter components.
  *
  * Provides the CSS variable bridge (via @theme inline) and a neutral color
- * palette so fireworks-ai components render correctly out of the box.
+ * palette so neeter components render correctly out of the box.
  *
- * If your app already uses shadcn/ui you don't need this file — fireworks-ai
+ * If your app already uses shadcn/ui you don't need this file — neeter
  * components use only standard shadcn variables plus Tailwind's built-in
  * color palette (amber, emerald, blue) for status indicators.
  *
  * Usage (non-shadcn apps):
- *   @import "fireworks-ai/theme.css";
+ *   @import "neeter/theme.css";
  */
 
 /* -- Source scanning ------------------------------------------------------- */
-/* Tells Tailwind to scan fireworks-ai's component source for utility classes. */
+/* Tells Tailwind to scan neeter's component source for utility classes. */
 
 @source "./react";
 

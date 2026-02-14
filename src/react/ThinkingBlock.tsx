@@ -5,7 +5,7 @@ import { ChevronIcon } from "./icons.js";
 import { markdownComponents } from "./markdown-overrides.js";
 import { PulsingDot } from "./StatusDot.js";
 
-const STORAGE_KEY = "fireworks-thinking-open";
+const STORAGE_KEY = "neeter-thinking-open";
 
 function readPref(): boolean {
   try {

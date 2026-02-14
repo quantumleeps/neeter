@@ -1,14 +1,14 @@
-# fireworks-ai
+# neeter
 
-[![npm version](https://img.shields.io/npm/v/fireworks-ai)](https://www.npmjs.com/package/fireworks-ai)
-[![npm downloads](https://img.shields.io/npm/dm/fireworks-ai)](https://www.npmjs.com/package/fireworks-ai)
-[![license](https://img.shields.io/npm/l/fireworks-ai)](./LICENSE)
+[![npm version](https://img.shields.io/npm/v/neeter)](https://www.npmjs.com/package/neeter)
+[![npm downloads](https://img.shields.io/npm/dm/neeter)](https://www.npmjs.com/package/neeter)
+[![license](https://img.shields.io/npm/l/neeter)](./LICENSE)
 
-A React + Hono toolkit for building chat UIs on top of the [Claude Agent SDK](https://github.com/anthropics/claude-agent-sdk). Tool calls, text deltas, and results are individual sparks — fireworks-ai launches them into a unified, vivid display.
+A React + Hono toolkit that puts a browser UI on the [Claude Agent SDK](https://github.com/anthropics/claude-agent-sdk) — the same agentic framework that powers Claude Code. Streams tool calls, file edits, permissions, and multi-turn sessions over SSE into ready-made React components.
 
-## Why fireworks-ai
+## Why neeter
 
-The Claude Agent SDK gives you a powerful agentic loop — but it's a server-side `AsyncGenerator` with no opinion on how to get those events to a browser. fireworks-ai bridges that gap:
+The Claude Agent SDK gives you a powerful agentic loop — but it's a server-side `AsyncGenerator` with no opinion on how to get those events to a browser. neeter bridges that gap:
 
 - **Multi-turn persistent sessions** — `PushChannel` + `SessionManager` let users send messages at any time. Messages queue and the SDK picks them up when ready — no "wait for the agent to finish" lockout.
 - **Named SSE event routing** — The SDK yields a flat stream of internal message types. The `MessageTranslator` reshapes them into semantically named SSE events (`text_delta`, `tool_start`, `tool_call`, `tool_result`, ...) that the browser's `EventSource` can route with native `addEventListener`.
@@ -20,7 +20,7 @@ The Claude Agent SDK gives you a powerful agentic loop — but it's a server-sid
 ## Install
 
 ```bash
-pnpm add fireworks-ai
+pnpm add neeter
 ```
 
 Peer dependencies:
@@ -39,7 +39,7 @@ Peer dependencies:
 
 ## Server
 
-`fireworks-ai/server` gives you a Hono router that manages Agent SDK sessions and streams events to the client over SSE.
+`neeter/server` gives you a Hono router that manages Agent SDK sessions and streams events to the client over SSE.
 
 The Claude Agent SDK reads your API key from the environment automatically. Make sure it's set before starting your server:
 
@@ -54,7 +54,7 @@ import {
   createAgentRouter,
   SessionManager,
   MessageTranslator,
-} from "fireworks-ai/server";
+} from "neeter/server";
 
 const sessions = new SessionManager(() => ({
   context: {},
@@ -165,10 +165,10 @@ The `PermissionGate` on each session manages the deferred promises internally �
 
 ## Client
 
-`fireworks-ai/react` provides a drop-in chat UI that connects to your server.
+`neeter/react` provides a drop-in chat UI that connects to your server.
 
 ```tsx
-import { AgentProvider, MessageList, ChatInput, useAgentContext } from "fireworks-ai/react";
+import { AgentProvider, MessageList, ChatInput, useAgentContext } from "neeter/react";
 
 function App() {
   return (
@@ -212,7 +212,7 @@ Each event is a typed `CustomEvent<T>` with `name` and `value` fields.
 
 ### Widgets
 
-When you add tools to your `SessionManager`, fireworks-ai automatically renders them with purpose-built widgets — diff views for edits, code blocks for file reads, expandable link pills for web searches, and so on. No configuration needed.
+When you add tools to your `SessionManager`, neeter automatically renders them with purpose-built widgets — diff views for edits, code blocks for file reads, expandable link pills for web searches, and so on. No configuration needed.
 
 - **[Built-in widgets](docs/built-in-widgets.md)** — what ships out of the box for the 11 supported SDK tools, how approval previews work, and how to extend or override them
 - **[Custom widgets](docs/custom-widgets.md)** — register your own components for MCP tools or app-specific rendering
@@ -233,18 +233,18 @@ Each tool call moves through phases, reflected in `WidgetProps.phase`:
 
 ## Styling
 
-Fireworks components use Tailwind v4 utility classes and [shadcn/ui](https://ui.shadcn.com)-compatible CSS variable names (`bg-primary`, `text-muted-foreground`, `border-border`, etc.).
+Neeter components use Tailwind v4 utility classes and [shadcn/ui](https://ui.shadcn.com)-compatible CSS variable names (`bg-primary`, `text-muted-foreground`, `border-border`, etc.).
 
 ### With shadcn/ui
 
-Your existing theme variables are already compatible. Add one line to your main CSS so Tailwind scans fireworks-ai's component source for utility classes:
+Your existing theme variables are already compatible. Add one line to your main CSS so Tailwind scans neeter's component source for utility classes:
 
 ```css
 @import "tailwindcss";
-@source "../node_modules/fireworks-ai/src";
+@source "../node_modules/neeter/src";
 ```
 
-The `@source` path is relative to your CSS file — adjust if your stylesheet lives in a nested directory (e.g. `../../node_modules/fireworks-ai/src`).
+The `@source` path is relative to your CSS file — adjust if your stylesheet lives in a nested directory (e.g. `../../node_modules/neeter/src`).
 
 ### Without shadcn/ui
 
@@ -252,7 +252,7 @@ Import the bundled theme, which includes source scanning automatically:
 
 ```css
 @import "tailwindcss";
-@import "fireworks-ai/theme.css";
+@import "neeter/theme.css";
 ```
 
 This provides a neutral OKLCH palette with light + dark mode support and the Tailwind v4 `@theme inline` variable bridge.
@@ -267,11 +267,11 @@ Add `.light` to `<html>` to force light mode when using system preference detect
 
 ### Switching to shadcn later
 
-Drop the `fireworks-ai/theme.css` import and add `@source` — your shadcn theme takes over with zero migration.
+Drop the `neeter/theme.css` import and add `@source` — your shadcn theme takes over with zero migration.
 
 ## API Reference
 
-### `fireworks-ai/server`
+### `neeter/server`
 
 | Export | Description |
 |--------|-------------|
@@ -286,7 +286,7 @@ Drop the `fireworks-ai/theme.css` import and add `@source` — your shadcn theme
 | `sseEncode(event)` | Formats an `SSEEvent` as an SSE string |
 | `streamSession(session, translator)` | Async generator yielding `SSEEvent`s |
 
-### `fireworks-ai/react`
+### `neeter/react`
 
 | Export | Description |
 |--------|-------------|

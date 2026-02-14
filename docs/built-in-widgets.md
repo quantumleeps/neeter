@@ -1,6 +1,6 @@
 # Built-in Widgets
 
-fireworks-ai ships widgets for 11 Claude Agent SDK tools. They auto-register when you import from `fireworks-ai/react` — just add tools to your `SessionManager` and the UI handles the rest.
+neeter ships widgets for 11 Claude Agent SDK tools. They auto-register when you import from `neeter/react` — just add tools to your `SessionManager` and the UI handles the rest.
 
 ## What you get
 
@@ -70,7 +70,7 @@ Seven SDK tools intentionally use the default fallback — they produce plain te
 Call `registerWidget` with the same `toolName` to replace any built-in. Your registration wins since side-effect imports run first, and later registrations overwrite earlier ones:
 
 ```tsx
-import { registerWidget } from "fireworks-ai/react";
+import { registerWidget } from "neeter/react";
 
 registerWidget({
   toolName: "Bash",

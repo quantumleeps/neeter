@@ -3,8 +3,8 @@
 ## Setup
 
 ```bash
-git clone https://github.com/quantumleeps/fireworks-ai.git
-cd fireworks-ai
+git clone https://github.com/quantumleeps/neeter.git
+cd neeter
 pnpm install        # installs deps + activates lefthook git hooks
 ```
 

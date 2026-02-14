@@ -1,16 +1,16 @@
 {
-  "name": "fireworks-ai",
-  "version": "0.5.1",
+  "name": "neeter",
+  "version": "0.6.0",
   "description": "React + Hono toolkit for building chat UIs on top of the Claude Agent SDK",
   "license": "MIT",
   "author": "Dan Leeper",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/quantumleeps/fireworks-ai.git"
+    "url": "git+https://github.com/quantumleeps/neeter.git"
   },
-  "homepage": "https://github.com/quantumleeps/fireworks-ai#readme",
+  "homepage": "https://github.com/quantumleeps/neeter#readme",
   "bugs": {
-    "url": "https://github.com/quantumleeps/fireworks-ai/issues"
+    "url": "https://github.com/quantumleeps/neeter/issues"
   },
   "keywords": [
     "claude",

@@ -61,7 +61,7 @@ The MCP server name (`"dice"`) becomes the middle segment of the tool's fully-qu
 
 ```tsx
 // client/widgets/DiceWidget.tsx
-import { registerWidget, type WidgetProps } from "fireworks-ai/react";
+import { registerWidget, type WidgetProps } from "neeter/react";
 
 interface DiceResult {
   rolls: number[];
@@ -97,9 +97,9 @@ Add a side-effect import in your app's entry point. This ensures `registerWidget
 
 ## How it works
 
-**Tool name matching** — `toolName` in your registration matches the *short* name of the tool, not the fully-qualified MCP name. fireworks-ai strips the `mcp__server__` prefix automatically, so `mcp__dice__roll` matches `toolName: "roll"`.
+**Tool name matching** — `toolName` in your registration matches the *short* name of the tool, not the fully-qualified MCP name. neeter strips the `mcp__server__` prefix automatically, so `mcp__dice__roll` matches `toolName: "roll"`.
 
-**Result parsing** — MCP tools return results as `content: [{ type: "text", text: "..." }]`. fireworks-ai parses the JSON string for you — your widget receives the parsed object directly as `result`.
+**Result parsing** — MCP tools return results as `content: [{ type: "text", text: "..." }]`. neeter parses the JSON string for you — your widget receives the parsed object directly as `result`.
 
 **Registration timing** — `registerWidget` must run before React renders any tool calls. Side-effect imports (`import "./widgets/DiceWidget.js"`) at the top of your entry point guarantee this. If you have multiple widgets, barrel-import a `widgets/` directory.
 
