@@ -1,6 +1,6 @@
 # Built-in Widgets
 
-neeter ships widgets for 11 Claude Agent SDK tools. They auto-register when you import from `neeter/react` — just add tools to your `SessionManager` and the UI handles the rest.
+neeter ships widgets for 11 Claude Agent SDK tools. They auto-register when you import from `@neeter/react` — just add tools to your `SessionManager` and the UI handles the rest.
 
 ## What you get
 
@@ -70,7 +70,7 @@ Seven SDK tools intentionally use the default fallback — they produce plain te
 Call `registerWidget` with the same `toolName` to replace any built-in. Your registration wins since side-effect imports run first, and later registrations overwrite earlier ones:
 
 ```tsx
-import { registerWidget } from "neeter/react";
+import { registerWidget } from "@neeter/react";
 
 registerWidget({
   toolName: "Bash",
@@ -93,7 +93,7 @@ Each widget registration can include:
 
 The `inputRenderer` serves double duty — it renders in both the approval card (with Allow/Deny buttons) and in queued tool calls waiting for earlier approvals to resolve.
 
-Source files: [`src/react/widgets/*Widget.tsx`](../src/react/widgets/)
+Source files: [`packages/react/src/widgets/*Widget.tsx`](../packages/react/src/widgets/)
 
 ## Next steps
 
