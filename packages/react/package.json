@@ -1,0 +1,45 @@
+{
+  "name": "@neeter/react",
+  "version": "0.6.0",
+  "description": "React components and hooks for building chat UIs on top of the Claude Agent SDK",
+  "license": "MIT",
+  "author": "Dan Leeper",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/quantumleeps/neeter.git",
+    "directory": "packages/react"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./theme.css": "./src/theme.css"
+  },
+  "files": [
+    "dist",
+    "src/theme.css"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@neeter/types": "workspace:*",
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^3.4.0"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-markdown": ">=10.0.0",
+    "zustand": ">=5.0.0",
+    "immer": ">=10.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.7",
+    "immer": "^11.1.4",
+    "react": "^19.2.0",
+    "zustand": "^5.0.11"
+  }
+}

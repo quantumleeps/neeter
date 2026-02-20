@@ -1,0 +1,36 @@
+{
+  "name": "@neeter/server",
+  "version": "0.6.0",
+  "description": "Hono server toolkit for building chat UIs on top of the Claude Agent SDK",
+  "license": "MIT",
+  "author": "Dan Leeper",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/quantumleeps/neeter.git",
+    "directory": "packages/server"
+  },
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@neeter/types": "workspace:*"
+  },
+  "peerDependencies": {
+    "@anthropic-ai/claude-agent-sdk": ">=0.2.0",
+    "hono": ">=4.0.0"
+  },
+  "devDependencies": {
+    "@anthropic-ai/claude-agent-sdk": "latest",
+    "hono": "^4.11.9"
+  }
+}

@@ -61,7 +61,7 @@ The MCP server name (`"dice"`) becomes the middle segment of the tool's fully-qu
 
 ```tsx
 // client/widgets/DiceWidget.tsx
-import { registerWidget, type WidgetProps } from "neeter/react";
+import { registerWidget, type WidgetProps } from "@neeter/react";
 
 interface DiceResult {
   rolls: number[];

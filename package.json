@@ -1,72 +1,16 @@
 {
-  "name": "neeter",
-  "version": "0.6.0",
-  "description": "React + Hono toolkit for building chat UIs on top of the Claude Agent SDK",
-  "license": "MIT",
-  "author": "Dan Leeper",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/quantumleeps/neeter.git"
-  },
-  "homepage": "https://github.com/quantumleeps/neeter#readme",
-  "bugs": {
-    "url": "https://github.com/quantumleeps/neeter/issues"
-  },
-  "keywords": [
-    "claude",
-    "agent-sdk",
-    "react",
-    "hono",
-    "sse",
-    "chat-ui",
-    "anthropic"
-  ],
+  "private": true,
   "packageManager": "pnpm@10.22.0",
-  "sideEffects": false,
-  "type": "module",
-  "exports": {
-    "./server": {
-      "types": "./dist/server/index.d.ts",
-      "import": "./dist/server/index.js"
-    },
-    "./react": {
-      "types": "./dist/react/index.d.ts",
-      "import": "./dist/react/index.js"
-    },
-    "./theme.css": "./src/theme.css"
-  },
-  "files": [
-    "dist",
-    "src/theme.css"
-  ],
   "scripts": {
-    "build": "tsc",
-    "check": "biome check src/",
+    "build": "tsc --build packages/types packages/server packages/react",
+    "check": "biome check packages/*/src/",
     "prepare": "lefthook install",
     "test": "vitest run"
   },
-  "dependencies": {
-    "clsx": "^2.1.1",
-    "tailwind-merge": "^3.4.0"
-  },
-  "peerDependencies": {
-    "@anthropic-ai/claude-agent-sdk": ">=0.2.0",
-    "hono": ">=4.0.0",
-    "react": ">=18.0.0",
-    "react-markdown": ">=10.0.0",
-    "zustand": ">=5.0.0",
-    "immer": ">=10.0.0"
-  },
   "devDependencies": {
-    "@anthropic-ai/claude-agent-sdk": "latest",
     "@biomejs/biome": "^2.3.14",
-    "@types/react": "^19.2.7",
-    "hono": "^4.11.9",
     "lefthook": "^2.1.1",
-    "immer": "^11.1.4",
-    "react": "^19.2.0",
     "typescript": "~5.9.3",
-    "vitest": "^4.0.18",
-    "zustand": "^5.0.11"
+    "vitest": "^4.0.18"
   }
 }

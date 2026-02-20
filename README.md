@@ -1,8 +1,7 @@
 # neeter
 
-[![npm version](https://img.shields.io/npm/v/neeter)](https://www.npmjs.com/package/neeter)
-[![npm downloads](https://img.shields.io/npm/dm/neeter)](https://www.npmjs.com/package/neeter)
-[![license](https://img.shields.io/npm/l/neeter)](./LICENSE)
+[![npm version](https://img.shields.io/npm/v/@neeter/server)](https://www.npmjs.com/package/@neeter/server)
+[![license](https://img.shields.io/npm/l/@neeter/server)](./LICENSE)
 
 A React + Hono toolkit that puts a browser UI on the [Claude Agent SDK](https://github.com/anthropics/claude-agent-sdk) — the same agentic framework that powers Claude Code. Streams tool calls, file edits, permissions, and multi-turn sessions over SSE into ready-made React components.
 
@@ -20,15 +19,26 @@ The Claude Agent SDK gives you a powerful agentic loop — but it's a server-sid
 ## Install
 
 ```bash
-pnpm add neeter
+# Server
+pnpm add @neeter/server
+
+# Client
+pnpm add @neeter/react
 ```
 
-Peer dependencies:
+Peer dependencies — **server**:
 
 ```json
 {
   "@anthropic-ai/claude-agent-sdk": ">=0.2.0",
-  "hono": ">=4.0.0",
+  "hono": ">=4.0.0"
+}
+```
+
+Peer dependencies — **client**:
+
+```json
+{
   "react": ">=18.0.0",
   "react-markdown": ">=10.0.0",
   "zustand": ">=5.0.0",
@@ -39,7 +49,7 @@ Peer dependencies:
 
 ## Server
 
-`neeter/server` gives you a Hono router that manages Agent SDK sessions and streams events to the client over SSE.
+`@neeter/server` gives you a Hono router that manages Agent SDK sessions and streams events to the client over SSE.
 
 The Claude Agent SDK reads your API key from the environment automatically. Make sure it's set before starting your server:
 
@@ -54,7 +64,7 @@ import {
   createAgentRouter,
   SessionManager,
   MessageTranslator,
-} from "neeter/server";
+} from "@neeter/server";
 
 const sessions = new SessionManager(() => ({
   context: {},
@@ -165,10 +175,10 @@ The `PermissionGate` on each session manages the deferred promises internally �
 
 ## Client
 
-`neeter/react` provides a drop-in chat UI that connects to your server.
+`@neeter/react` provides a drop-in chat UI that connects to your server.
 
 ```tsx
-import { AgentProvider, MessageList, ChatInput, useAgentContext } from "neeter/react";
+import { AgentProvider, MessageList, ChatInput, useAgentContext } from "@neeter/react";
 
 function App() {
   return (
@@ -241,10 +251,10 @@ Your existing theme variables are already compatible. Add one line to your main 
 
 ```css
 @import "tailwindcss";
-@source "../node_modules/neeter/src";
+@source "../node_modules/@neeter/react/src";
 ```
 
-The `@source` path is relative to your CSS file — adjust if your stylesheet lives in a nested directory (e.g. `../../node_modules/neeter/src`).
+The `@source` path is relative to your CSS file — adjust if your stylesheet lives in a nested directory (e.g. `../../node_modules/@neeter/react/src`).
 
 ### Without shadcn/ui
 
@@ -252,7 +262,7 @@ Import the bundled theme, which includes source scanning automatically:
 
 ```css
 @import "tailwindcss";
-@import "neeter/theme.css";
+@import "@neeter/react/theme.css";
 ```
 
 This provides a neutral OKLCH palette with light + dark mode support and the Tailwind v4 `@theme inline` variable bridge.
@@ -267,11 +277,11 @@ Add `.light` to `<html>` to force light mode when using system preference detect
 
 ### Switching to shadcn later
 
-Drop the `neeter/theme.css` import and add `@source` — your shadcn theme takes over with zero migration.
+Drop the `@neeter/react/theme.css` import and add `@source` — your shadcn theme takes over with zero migration.
 
 ## API Reference
 
-### `neeter/server`
+### `@neeter/server`
 
 | Export | Description |
 |--------|-------------|
@@ -286,7 +296,7 @@ Drop the `neeter/theme.css` import and add `@source` — your shadcn theme takes
 | `sseEncode(event)` | Formats an `SSEEvent` as an SSE string |
 | `streamSession(session, translator)` | Async generator yielding `SSEEvent`s |
 
-### `neeter/react`
+### `@neeter/react`
 
 | Export | Description |
 |--------|-------------|
