@@ -1,7 +1,12 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { extname, join, normalize, resolve } from "node:path";
 import { serve } from "@hono/node-server";
-import { createAgentRouter, MessageTranslator, SessionManager } from "@neeter/server";
+import {
+  createAgentRouter,
+  createSandboxHook,
+  MessageTranslator,
+  SessionManager,
+} from "@neeter/server";
 import { Hono } from "hono";
 
 // The Agent SDK spawns a Claude Code subprocess. If we're running inside
@@ -17,11 +22,43 @@ const SCAFFOLD_HTML = `<!doctype html>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Preview</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script type="importmap">
+  {
+    "imports": {
+      "react": "https://esm.sh/react@19",
+      "react/": "https://esm.sh/react@19/",
+      "react-dom/client": "https://esm.sh/react-dom@19/client",
+      "d3": "https://esm.sh/d3@7",
+      "chart.js": "https://esm.sh/chart.js@4",
+      "chart.js/auto": "https://esm.sh/chart.js@4/auto",
+      "react-markdown": "https://esm.sh/react-markdown@10?deps=react@19",
+      "recharts": "https://esm.sh/recharts@2?deps=react@19,react-dom@19",
+      "three": "https://esm.sh/three@0.170",
+      "framer-motion": "https://esm.sh/framer-motion@12?deps=react@19,react-dom@19"
+    }
+  }
+  </script>
+  <script src="https://unpkg.com/@babel/standalone@7/babel.min.js"></script>
 </head>
 <body>
-  <div class="min-h-screen flex items-center justify-center">
-    <p class="text-gray-400 text-lg">Send a message to get started.</p>
-  </div>
+  <div id="root"></div>
+  <script type="text/babel" data-type="module">
+    import React from 'react';
+    import { createRoot } from 'react-dom/client';
+
+    function App() {
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
+          <div className="text-center">
+            <h1 className="text-2xl font-semibold text-slate-800 mb-2">Ready</h1>
+            <p className="text-slate-500">Send a message to get started.</p>
+          </div>
+        </div>
+      );
+    }
+
+    createRoot(document.getElementById('root')).render(<App />);
+  </script>
 </body>
 </html>`;
 
@@ -50,18 +87,37 @@ const sessions = new SessionManager<SessionContext>(() => {
     context: { sandboxDir },
     model: "claude-sonnet-4-6",
     cwd: sandboxDir,
-    tools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep"],
+    permissionMode: "default",
+    tools: ["Read", "Write", "Edit", "Glob", "Grep"],
+    allowedTools: ["Read", "Glob", "Grep", "Edit"],
     disallowedTools: ["WebFetch", "WebSearch", "NotebookEdit", "TodoWrite"],
-    permissionMode: "bypassPermissions",
+    hooks: {
+      PreToolUse: createSandboxHook(sandboxDir, resolve),
+    },
     systemPrompt: `You are a creative web developer. Your workspace is ${sandboxDir}.
 
+Workflow:
+1. Read index.html first — it already has React mounted with Babel and Tailwind
+2. Use the Edit tool to modify the App component — never use Write to overwrite the entire file
+3. Keep the existing <head> setup (import map, Tailwind, Babel) intact
+
 Rules:
-- Build everything in a single index.html file (unless the user asks for more files)
+- Build in a single index.html file (unless the user asks for more)
+- Favor the simplest solution — short, clean code over elaborate implementations
 - Tailwind CSS is available via CDN — use utility classes for all styling
-- You may add inline <script> and <style> tags for interactivity and custom CSS
-- NEVER read, write, or reference files outside your workspace directory
-- NEVER use Bash to install packages, run servers, or modify anything outside your workspace
 - When the user describes a page, build it immediately — don't ask clarifying questions
+
+Available packages (pre-configured in import map):
+- react, react-dom/client — already mounted, use JSX in <script type="text/babel" data-type="module">
+- d3 — data visualization
+- chart.js, chart.js/auto — charts
+- recharts — React chart components
+- react-markdown — render markdown
+- three — 3D graphics
+- framer-motion — animations
+
+Usage: import from bare specifiers (e.g. import * as d3 from "d3").
+For packages NOT in the import map, use full URLs: import x from "https://esm.sh/package-name".
 
 You are building a live preview that the user can see updating in real time.`,
   };
