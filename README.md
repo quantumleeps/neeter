@@ -251,10 +251,10 @@ Your existing theme variables are already compatible. Add one line to your main 
 
 ```css
 @import "tailwindcss";
-@source "../node_modules/@neeter/react/src";
+@source "../node_modules/@neeter/react/dist";
 ```
 
-The `@source` path is relative to your CSS file — adjust if your stylesheet lives in a nested directory (e.g. `../../node_modules/@neeter/react/src`).
+The `@source` path is relative to your CSS file — adjust if your stylesheet lives in a nested directory (e.g. `../../node_modules/@neeter/react/dist`).
 
 ### Without shadcn/ui
 

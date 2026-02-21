@@ -15,7 +15,7 @@
 /* -- Source scanning ------------------------------------------------------- */
 /* Tells Tailwind to scan neeter's component source for utility classes. */
 
-@source ".";
+@source "../dist";
 
 /* -- Tailwind v4 variable bridge ------------------------------------------ */
 /* Maps CSS custom properties to Tailwind utility classes.                     */
