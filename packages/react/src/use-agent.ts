@@ -9,9 +9,11 @@ export interface UseAgentConfig {
 
 export interface UseAgentReturn {
   sessionId: string | null;
+  sdkSessionId: string | null;
   sendMessage: (text: string) => Promise<void>;
   stopSession: () => Promise<void>;
   respondToPermission: (response: PermissionResponse) => Promise<void>;
+  resumeSession: (options?: { fork?: boolean }) => Promise<void>;
 }
 
 export function useAgent(store: ChatStore, config?: UseAgentConfig): UseAgentReturn {
@@ -21,6 +23,7 @@ export function useAgent(store: ChatStore, config?: UseAgentConfig): UseAgentRet
   const abortedRef = useRef(false);
 
   const sessionId = useSyncExternalStore(store.subscribe, () => store.getState().sessionId);
+  const sdkSessionId = useSyncExternalStore(store.subscribe, () => store.getState().sdkSessionId);
 
   useEffect(() => {
     let cancelled = false;
@@ -41,6 +44,11 @@ export function useAgent(store: ChatStore, config?: UseAgentConfig): UseAgentRet
     const es = new EventSource(`${endpoint}/sessions/${sessionId}/events`);
     eventSourceRef.current = es;
     abortedRef.current = false;
+
+    es.addEventListener("session_init", (e) => {
+      const { sdkSessionId: id } = JSON.parse(e.data);
+      store.getState().setSdkSessionId(id);
+    });
 
     es.addEventListener("message_start", () => {
       store.getState().setThinking(true);
@@ -185,5 +193,31 @@ export function useAgent(store: ChatStore, config?: UseAgentConfig): UseAgentRet
     [sessionId, endpoint, store],
   );
 
-  return { sessionId, sendMessage, stopSession, respondToPermission };
+  const resumeSession = useCallback(
+    async (options?: { fork?: boolean }) => {
+      const currentSdkSessionId = store.getState().sdkSessionId;
+      if (!currentSdkSessionId) return;
+
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+      }
+
+      store.getState().reset();
+
+      const res = await fetch(`${endpoint}/sessions/resume`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sdkSessionId: currentSdkSessionId,
+          forkSession: options?.fork,
+        }),
+      });
+      const data = await res.json();
+      store.getState().setSessionId(data.sessionId);
+    },
+    [endpoint, store],
+  );
+
+  return { sessionId, sdkSessionId, sendMessage, stopSession, respondToPermission, resumeSession };
 }

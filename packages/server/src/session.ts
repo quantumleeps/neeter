@@ -34,8 +34,15 @@ export interface SessionInit<TCtx> {
   hooks?: Partial<Record<HookEvent, HookCallbackMatcher[]>>;
 }
 
+export interface ResumeOptions {
+  sdkSessionId: string;
+  forkSession?: boolean;
+}
+
 export interface Session<TCtx> {
   id: string;
+  sdkSessionId?: string;
+  cwd?: string;
   context: TCtx;
   pushMessage(text: string): void;
   messageIterator: AsyncIterable<SDKMessage>;
@@ -58,8 +65,60 @@ export class SessionManager<TCtx> {
   }
 
   create(): Session<TCtx> {
-    const id = crypto.randomUUID();
+    return this.buildSession(this.factory());
+  }
+
+  resume(options: ResumeOptions): Session<TCtx> {
     const init = this.factory();
+
+    // Reuse the original session's cwd and context so the SDK can find its
+    // persisted conversation data (stored under ~/.claude/projects/-<cwd-path>/).
+    const original = this.findBySdkSessionId(options.sdkSessionId);
+    if (original) {
+      if (original.cwd) init.cwd = original.cwd;
+      init.context = original.context;
+    }
+
+    return this.buildSession(init, {
+      resume: options.sdkSessionId,
+      ...(options.forkSession ? { forkSession: true } : {}),
+    });
+  }
+
+  get(id: string): Session<TCtx> | undefined {
+    return this.sessions.get(id);
+  }
+
+  delete(id: string) {
+    const session = this.sessions.get(id);
+    if (session) {
+      session.abort();
+      this.sessions.delete(id);
+    }
+  }
+
+  findBySdkSessionId(sdkSessionId: string): Session<TCtx> | undefined {
+    for (const session of this.sessions.values()) {
+      if (session.sdkSessionId === sdkSessionId) return session;
+    }
+    return undefined;
+  }
+
+  cleanup() {
+    const now = Date.now();
+    for (const [id, session] of this.sessions) {
+      if (now - session.lastActivityAt > this.idleTimeoutMs) {
+        session.abort();
+        this.sessions.delete(id);
+      }
+    }
+  }
+
+  private buildSession(
+    init: SessionInit<TCtx>,
+    extraQueryOptions?: { resume?: string; forkSession?: boolean },
+  ): Session<TCtx> {
+    const id = crypto.randomUUID();
     const channel = new PushChannel<SDKUserMessage>();
     const abortController = new AbortController();
     const permissionGate = new PermissionGate();
@@ -126,11 +185,13 @@ export class SessionManager<TCtx> {
         ...(init.cwd ? { cwd: init.cwd } : {}),
         ...(init.disallowedTools ? { disallowedTools: init.disallowedTools } : {}),
         ...(init.hooks ? { hooks: init.hooks } : {}),
+        ...extraQueryOptions,
       },
     });
 
     const session: Session<TCtx> = {
       id,
+      cwd: init.cwd,
       context: init.context,
       pushMessage: (text: string) => {
         session.lastActivityAt = Date.now();
@@ -148,27 +209,5 @@ export class SessionManager<TCtx> {
 
     this.sessions.set(id, session);
     return session;
-  }
-
-  get(id: string): Session<TCtx> | undefined {
-    return this.sessions.get(id);
-  }
-
-  delete(id: string) {
-    const session = this.sessions.get(id);
-    if (session) {
-      session.abort();
-      this.sessions.delete(id);
-    }
-  }
-
-  cleanup() {
-    const now = Date.now();
-    for (const [id, session] of this.sessions) {
-      if (now - session.lastActivityAt > this.idleTimeoutMs) {
-        session.abort();
-        this.sessions.delete(id);
-      }
-    }
   }
 }

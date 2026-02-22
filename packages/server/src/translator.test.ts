@@ -302,6 +302,41 @@ describe("MessageTranslator", () => {
     ]);
   });
 
+  it("emits session_init on system init message and sets sdkSessionId on session", () => {
+    const t = new MessageTranslator();
+    const s = stubSession();
+    const events = t.translate(
+      {
+        type: "system",
+        subtype: "init",
+        session_id: "sdk-abc-123",
+        model: "claude-sonnet-4-20250514",
+        tools: ["Read", "Write", "Bash"],
+      },
+      s,
+    );
+    expect(events).toEqual([
+      {
+        event: "session_init",
+        data: JSON.stringify({
+          sdkSessionId: "sdk-abc-123",
+          model: "claude-sonnet-4-20250514",
+          tools: ["Read", "Write", "Bash"],
+        }),
+      },
+    ]);
+    expect(s.sdkSessionId).toBe("sdk-abc-123");
+  });
+
+  it("ignores non-init system messages", () => {
+    const t = new MessageTranslator();
+    const events = t.translate(
+      { type: "system", subtype: "status", status: "compacting" },
+      session,
+    );
+    expect(events).toEqual([]);
+  });
+
   it("returns empty array for unknown message types", () => {
     const t = new MessageTranslator();
     const events = t.translate({ type: "unknown_type" }, session);

@@ -10,6 +10,12 @@ export interface CustomEvent<T = unknown> {
   value: T;
 }
 
+export interface SessionInitEvent {
+  sdkSessionId: string;
+  model: string;
+  tools: string[];
+}
+
 // --- Chat Store ---
 
 export type ToolCallPhase = "pending" | "streaming_input" | "running" | "complete" | "error";

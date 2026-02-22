@@ -4,6 +4,7 @@ import { createStore, type StoreApi } from "zustand/vanilla";
 
 interface ChatStoreState {
   sessionId: string | null;
+  sdkSessionId: string | null;
   messages: ChatMessage[];
   isStreaming: boolean;
   isThinking: boolean;
@@ -16,6 +17,7 @@ interface ChatStoreState {
 
 interface ChatStoreActions {
   setSessionId: (id: string) => void;
+  setSdkSessionId: (id: string) => void;
   addUserMessage: (text: string) => void;
   appendStreamingText: (text: string) => void;
   appendStreamingThinking: (text: string) => void;
@@ -56,6 +58,7 @@ export function createChatStore(): ChatStore {
   return createStore<ChatStoreShape>()(
     immer((set) => ({
       sessionId: null,
+      sdkSessionId: null,
       messages: [],
       isStreaming: false,
       isThinking: false,
@@ -68,6 +71,11 @@ export function createChatStore(): ChatStore {
       setSessionId: (id) =>
         set((s) => {
           s.sessionId = id;
+        }),
+
+      setSdkSessionId: (id) =>
+        set((s) => {
+          s.sdkSessionId = id;
         }),
 
       addUserMessage: (text) =>
@@ -229,6 +237,7 @@ export function createChatStore(): ChatStore {
       reset: () =>
         set((s) => {
           s.sessionId = null;
+          s.sdkSessionId = null;
           s.messages = [];
           s.isStreaming = false;
           s.isThinking = false;

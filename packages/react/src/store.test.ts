@@ -256,6 +256,19 @@ describe("ChatStore", () => {
     expect(s.totalTurns).toBe(0);
   });
 
+  it("setSdkSessionId stores the SDK session ID", () => {
+    const store = createChatStore();
+    store.getState().setSdkSessionId("sdk-123");
+    expect(store.getState().sdkSessionId).toBe("sdk-123");
+  });
+
+  it("reset clears sdkSessionId", () => {
+    const store = createChatStore();
+    store.getState().setSdkSessionId("sdk-123");
+    store.getState().reset();
+    expect(store.getState().sdkSessionId).toBeNull();
+  });
+
   it("cancelInflightToolCalls marks pending/streaming/running as error", () => {
     const store = createChatStore();
     store.getState().startToolCall("tc-1", "Read");
