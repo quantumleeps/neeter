@@ -96,7 +96,7 @@ const sessions = new SessionManager(() => ({
 
 When enabled, thinking blocks stream to the client as `thinking_delta` SSE events and render as collapsible cards in `MessageList`. Set `{ type: "disabled" }` to explicitly turn thinking off (it's off by default).
 
-This gives you four endpoints:
+This gives you five endpoints:
 
 | Method | Path | Description |
 |--------|------|-------------|
@@ -104,6 +104,7 @@ This gives you four endpoints:
 | `POST` | `/api/sessions/:id/messages` | Send `{ text }` to a session |
 | `GET` | `/api/sessions/:id/events` | SSE stream of agent events |
 | `POST` | `/api/sessions/:id/permissions` | Respond to a permission request (see [Permissions](#permissions)) |
+| `POST` | `/api/sessions/:id/abort` | Abort the current agent turn |
 
 ### Session context
 
@@ -279,6 +280,13 @@ Add `.light` to `<html>` to force light mode when using system preference detect
 
 Drop the `@neeter/react/theme.css` import and add `@source` — your shadcn theme takes over with zero migration.
 
+## Examples
+
+| Example | Description |
+|---------|-------------|
+| **[basic-chat](examples/basic-chat)** | Minimal chat UI — `AgentProvider` + `MessageList` + `ChatInput` |
+| **[live-preview](examples/live-preview)** | Split-pane coding assistant with live React preview, per-session sandboxes, and code viewer |
+
 ## API Reference
 
 ### `@neeter/server`
@@ -294,6 +302,7 @@ Drop the `@neeter/react/theme.css` import and add `@source` — your shadcn them
 | `PermissionGate` | Per-session deferred-promise map for tool approval and user questions |
 | `PushChannel<T>` | Async iterable queue for feeding messages to the SDK |
 | `sseEncode(event)` | Formats an `SSEEvent` as an SSE string |
+| `createSandboxHook(dir, resolve)` | PreToolUse hook that blocks file operations outside a sandbox directory |
 | `streamSession(session, translator)` | Async generator yielding `SSEEvent`s |
 
 ### `@neeter/react`
@@ -301,13 +310,13 @@ Drop the `@neeter/react/theme.css` import and add `@source` — your shadcn them
 | Export | Description |
 |--------|-------------|
 | `AgentProvider` | Context provider — wraps store + SSE connection |
-| `useAgentContext()` | Returns `{ sessionId, sendMessage, respondToPermission, store }` |
+| `useAgentContext()` | Returns `{ sessionId, sendMessage, stopSession, respondToPermission, store }` |
 | `useChatStore(selector)` | Zustand selector hook into chat state |
 | `createChatStore()` | Creates a vanilla Zustand store (for advanced use) |
 | `useAgent(store, config?)` | SSE connection hook (used internally by `AgentProvider`) |
 | `MessageList` | Auto-scrolling message list with pending permissions and thinking indicator |
 | `TextMessage` | Markdown-rendered message bubble |
-| `ChatInput` | Textarea + send button |
+| `ChatInput` | Textarea + send/stop button (accepts `onStop`, `isStreaming`) |
 | `ToolCallCard` | Lifecycle-aware tool call display with inline approval |
 | `PendingPermissions` | Renders pending tool approval and user question cards |
 | `ToolApprovalCard` | Tool approval card with Allow/Deny buttons |
@@ -315,6 +324,7 @@ Drop the `@neeter/react/theme.css` import and add `@source` — your shadcn them
 | `ThinkingBlock` | Collapsible card displaying extended thinking text |
 | `ThinkingIndicator` | Animated dots shown while agent is generating |
 | `CollapsibleCard` | Expandable card wrapper |
+| `StopIcon` | Square stop icon SVG component |
 | `StatusDot` | Phase-colored status indicator |
 | `cn(...inputs)` | `clsx` + `tailwind-merge` utility for class merging |
 | `registerWidget(registration)` | Register a component for a tool name |
