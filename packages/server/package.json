@@ -33,6 +33,6 @@
   "devDependencies": {
     "@anthropic-ai/claude-agent-sdk": "latest",
     "@types/node": "^22.19.11",
-    "hono": "^4.11.9"
+    "hono": "^4.12.1"
   }
 }
