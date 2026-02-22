@@ -1,6 +1,6 @@
 {
   "name": "@neeter/types",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "Shared protocol types for neeter",
   "license": "MIT",
   "author": "Dan Leeper",
