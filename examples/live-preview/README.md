@@ -5,6 +5,8 @@ a React app in real time on the right. Each session gets an isolated
 sandbox with Tailwind CSS and a curated set of libraries — the agent
 writes pure JSX and the preview updates on every edit.
 
+https://github.com/user-attachments/assets/5f442559-a69c-44ab-b739-9d18ecac2add
+
 > **Warning — experimental.** This example gives an AI agent access to a
 > local filesystem directory. It is designed for experimentation only and
 > is **not suitable for production use** without extensive hardening (see
