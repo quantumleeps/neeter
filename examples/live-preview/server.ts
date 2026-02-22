@@ -15,7 +15,9 @@ delete process.env.CLAUDECODE;
 
 const SANDBOXES_DIR = resolve("sandboxes");
 
-const SCAFFOLD_HTML = `<!doctype html>
+// HTML shell template — app.jsx content is injected at serve time via {{APP_CODE}}.
+// The agent only reads/edits app.jsx; this template never touches the sandbox.
+const HTML_TEMPLATE = `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -43,29 +45,33 @@ const SCAFFOLD_HTML = `<!doctype html>
 <body>
   <div id="root"></div>
   <script type="text/babel" data-type="module">
-    import React from 'react';
-    import { createRoot } from 'react-dom/client';
-
-    function App() {
-      return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
-          <div className="text-center">
-            <h1 className="text-2xl font-semibold text-slate-800 mb-2">Ready</h1>
-            <p className="text-slate-500">Send a message to get started.</p>
-          </div>
-        </div>
-      );
-    }
-
-    createRoot(document.getElementById('root')).render(<App />);
+{{APP_CODE}}
   </script>
 </body>
 </html>`;
+
+const SCAFFOLD_APP = `import React from 'react';
+import { createRoot } from 'react-dom/client';
+
+function App() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
+      <div className="text-center">
+        <h1 className="text-2xl font-semibold text-slate-800 mb-2">Ready</h1>
+        <p className="text-slate-500">Send a message to get started.</p>
+      </div>
+    </div>
+  );
+}
+
+createRoot(document.getElementById('root')).render(<App />);
+`;
 
 const MIME_TYPES: Record<string, string> = {
   ".html": "text/html",
   ".css": "text/css",
   ".js": "application/javascript",
+  ".jsx": "text/javascript",
   ".json": "application/json",
   ".svg": "image/svg+xml",
   ".png": "image/png",
@@ -81,7 +87,7 @@ const sessions = new SessionManager<SessionContext>(() => {
   const sandboxId = crypto.randomUUID();
   const sandboxDir = resolve(SANDBOXES_DIR, sandboxId);
   mkdirSync(sandboxDir, { recursive: true });
-  writeFileSync(join(sandboxDir, "index.html"), SCAFFOLD_HTML);
+  writeFileSync(join(sandboxDir, "app.jsx"), SCAFFOLD_APP);
 
   return {
     context: { sandboxDir },
@@ -97,18 +103,19 @@ const sessions = new SessionManager<SessionContext>(() => {
     systemPrompt: `You are a creative web developer. Your workspace is ${sandboxDir}.
 
 Workflow:
-1. Read index.html first — it already has React mounted with Babel and Tailwind
-2. Use the Edit tool to modify the App component — never use Write to overwrite the entire file
-3. Keep the existing <head> setup (import map, Tailwind, Babel) intact
+1. Read app.jsx first — it contains the React app code
+2. Use the Edit tool to modify app.jsx — never use Write to overwrite the entire file
+3. Do NOT read or modify index.html — it is a shell that loads Tailwind, Babel, and the import map. Everything you need is in app.jsx.
 
 Rules:
-- Build in a single index.html file (unless the user asks for more)
+- Build in app.jsx (unless the user asks for additional files)
+- app.jsx is injected into the preview page automatically
 - Favor the simplest solution — short, clean code over elaborate implementations
 - Tailwind CSS is available via CDN — use utility classes for all styling
 - When the user describes a page, build it immediately — don't ask clarifying questions
 
 Available packages (pre-configured in import map):
-- react, react-dom/client — already mounted, use JSX in <script type="text/babel" data-type="module">
+- react, react-dom/client — already mounted, write JSX directly in app.jsx
 - d3 — data visualization
 - chart.js, chart.js/auto — charts
 - recharts — React chart components
@@ -137,12 +144,44 @@ const agentRouter = createAgentRouter({ sessions, translator });
 const app = new Hono();
 app.route("/", agentRouter);
 
-// Serve sandbox files for the preview iframe
+// Return raw app.jsx source for the code viewer (separate from preview composition).
+app.get("/api/sessions/:id/source", (c) => {
+  const session = sessions.get(c.req.param("id"));
+  if (!session) return c.json({ error: "Session not found" }, 404);
+  try {
+    const code = readFileSync(join(session.context.sandboxDir, "app.jsx"), "utf-8");
+    return c.body(code, 200, {
+      "Content-Type": "text/plain",
+      "Cache-Control": "no-cache",
+    });
+  } catch {
+    return c.json({ error: "Not found" }, 404);
+  }
+});
+
+// Serve sandbox files for the preview iframe.
+// index.html is composed on-the-fly by injecting app.jsx into HTML_TEMPLATE
+// so the agent only ever reads/edits app.jsx — the HTML shell stays out of context.
 app.get("/api/sessions/:id/preview/*", (c) => {
   const session = sessions.get(c.req.param("id"));
   if (!session) return c.json({ error: "Session not found" }, 404);
 
   const requestedPath = c.req.param("*") || "index.html";
+
+  // Compose index.html dynamically from template + app.jsx
+  if (requestedPath === "index.html") {
+    try {
+      const appCode = readFileSync(join(session.context.sandboxDir, "app.jsx"), "utf-8");
+      const html = HTML_TEMPLATE.replace("{{APP_CODE}}", appCode);
+      return c.body(html, 200, {
+        "Content-Type": "text/html",
+        "Cache-Control": "no-cache",
+      });
+    } catch {
+      return c.json({ error: "Not found" }, 404);
+    }
+  }
+
   const filePath = normalize(join(session.context.sandboxDir, requestedPath));
 
   // Prevent path traversal

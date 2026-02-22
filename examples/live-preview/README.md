@@ -1,7 +1,9 @@
 # Live Preview
 
 A split-pane coding assistant: chat with Claude on the left, watch it build
-a webpage in real time on the right.
+a React app in real time on the right. Each session gets an isolated
+sandbox with Tailwind CSS and a curated set of libraries — the agent
+writes pure JSX and the preview updates on every edit.
 
 > **Warning — experimental.** This example gives an AI agent access to a
 > local filesystem directory. It is designed for experimentation only and
@@ -38,21 +40,45 @@ Open `http://localhost:5173` and try prompts like:
 ## How it works
 
 Each browser tab gets its own **sandbox directory** (`./sandboxes/{uuid}/`)
-with a scaffolded `index.html` that includes React (via Babel standalone),
-Tailwind CSS, and an import map for common libraries (D3, Chart.js,
-Recharts, Three.js, Framer Motion).
+containing a single `app.jsx` file — a complete React component tree that
+the agent reads and edits. The sandbox never contains HTML; instead, the
+server composes a full page on-the-fly by injecting `app.jsx` into an HTML
+shell template that loads Tailwind CSS, Babel standalone, and an import map.
+
+This split keeps the agent's context lean — it only ever sees pure React
+code, never the `<head>` boilerplate, CDN scripts, or import map config.
+
+### Available libraries
+
+The import map makes these packages available via bare specifiers
+(`import * as d3 from "d3"`). The agent can also use any package from
+`esm.sh` by URL.
+
+| Package | Use |
+| --- | --- |
+| `react`, `react-dom/client` | Already mounted — write JSX directly |
+| `d3` | Data visualization |
+| `chart.js`, `chart.js/auto` | Charts |
+| `recharts` | React chart components |
+| `react-markdown` | Markdown rendering |
+| `three` | 3D graphics |
+| `framer-motion` | Animations |
+
+### Architecture
 
 ```
 Browser
 ├── Left pane: chat (MessageList + ChatInput)
-└── Right pane: <iframe> showing the sandbox's index.html
+├── Right pane: <iframe> showing composed preview
+└── Code viewer: syntax-highlighted app.jsx overlay
 
 Server
-├── POST /api/sessions           → create session + sandbox dir
-├── POST /api/sessions/:id/messages
-├── POST /api/sessions/:id/abort → stop the agent mid-turn
-├── GET  /api/sessions/:id/events   (SSE stream)
-└── GET  /api/sessions/:id/preview/* → serve sandbox files
+├── POST /api/sessions              → create session + sandbox dir
+├── POST /api/sessions/:id/messages → send user message
+├── POST /api/sessions/:id/abort    → stop the agent mid-turn
+├── GET  /api/sessions/:id/events   → SSE stream
+├── GET  /api/sessions/:id/source   → raw app.jsx for code viewer
+└── GET  /api/sessions/:id/preview/* → composed HTML for iframe
 ```
 
 When the agent's Write or Edit tool completes, the server emits a
@@ -61,8 +87,8 @@ reloads the iframe — no file watcher needed.
 
 The agent has access to `Read`, `Write`, `Edit`, `Glob`, `Grep`, and
 `TodoWrite`, with its `cwd` set to the sandbox directory. The system
-prompt instructs it to read `index.html` first, then use the Edit tool
-to modify the existing React app — never overwriting the whole file.
+prompt instructs it to read `app.jsx` first, then use the Edit tool
+to modify the React app — never overwriting the whole file.
 
 ## Safety & sandboxing
 

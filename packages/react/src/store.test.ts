@@ -235,4 +235,58 @@ describe("ChatStore", () => {
     const tc = firstToolCall(store);
     expect(tc.status).toBe("pending");
   });
+
+  it("addCost accumulates cost and turns", () => {
+    const store = createChatStore();
+    store.getState().addCost(0.005, 1);
+    store.getState().addCost(0.012, 2);
+
+    const s = store.getState();
+    expect(s.totalCost).toBeCloseTo(0.017);
+    expect(s.totalTurns).toBe(3);
+  });
+
+  it("reset clears cost and turns", () => {
+    const store = createChatStore();
+    store.getState().addCost(0.01, 1);
+    store.getState().reset();
+
+    const s = store.getState();
+    expect(s.totalCost).toBe(0);
+    expect(s.totalTurns).toBe(0);
+  });
+
+  it("cancelInflightToolCalls marks pending/streaming/running as error", () => {
+    const store = createChatStore();
+    store.getState().startToolCall("tc-1", "Read");
+    store.getState().startToolCall("tc-2", "Edit");
+    store.getState().appendToolInput("tc-2", '{"file":');
+    store.getState().startToolCall("tc-3", "Write");
+    store.getState().finalizeToolCall("tc-3", "Write", { file: "a.txt" });
+    store.getState().startToolCall("tc-4", "Glob");
+    store.getState().completeToolCall("tc-4", "done");
+
+    // tc-1: pending, tc-2: streaming_input, tc-3: running, tc-4: complete
+    store.getState().cancelInflightToolCalls();
+
+    const tcs = store.getState().messages.flatMap((m) => m.toolCalls ?? []);
+    expect(tcs.find((t) => t.id === "tc-1")?.status).toBe("error");
+    expect(tcs.find((t) => t.id === "tc-1")?.error).toBe("Interrupted");
+    expect(tcs.find((t) => t.id === "tc-2")?.status).toBe("error");
+    expect(tcs.find((t) => t.id === "tc-3")?.status).toBe("error");
+    // already-complete tool call is untouched
+    expect(tcs.find((t) => t.id === "tc-4")?.status).toBe("complete");
+  });
+
+  it("cancelInflightToolCalls is a no-op when no inflight calls exist", () => {
+    const store = createChatStore();
+    store.getState().startToolCall("tc-1", "Read");
+    store.getState().completeToolCall("tc-1", "ok");
+
+    store.getState().cancelInflightToolCalls();
+
+    const tc = firstToolCall(store);
+    expect(tc.status).toBe("complete");
+    expect(tc.error).toBeUndefined();
+  });
 });
