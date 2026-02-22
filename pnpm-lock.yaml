@@ -28,7 +28,7 @@ importers:
         version: 0.2.50(zod@4.3.6)
       '@hono/node-server':
         specifier: ^1.14.3
-        version: 1.19.9(hono@4.11.9)
+        version: 1.19.9(hono@4.12.1)
       '@neeter/react':
         specifier: workspace:*
         version: link:../../packages/react
@@ -39,8 +39,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/types
       hono:
-        specifier: ^4.11.9
-        version: 4.11.9
+        specifier: ^4.12.1
+        version: 4.12.1
       immer:
         specifier: ^11.1.4
         version: 11.1.4
@@ -95,7 +95,7 @@ importers:
         version: 0.2.50(zod@4.3.6)
       '@hono/node-server':
         specifier: ^1.14.3
-        version: 1.19.9(hono@4.11.9)
+        version: 1.19.9(hono@4.12.1)
       '@neeter/react':
         specifier: workspace:*
         version: link:../../packages/react
@@ -106,8 +106,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/types
       hono:
-        specifier: ^4.11.9
-        version: 4.11.9
+        specifier: ^4.12.1
+        version: 4.12.1
       immer:
         specifier: ^11.1.4
         version: 11.1.4
@@ -199,8 +199,8 @@ importers:
         specifier: ^22.19.11
         version: 22.19.11
       hono:
-        specifier: ^4.11.9
-        version: 4.11.9
+        specifier: ^4.12.1
+        version: 4.12.1
 
   packages/types: {}
 
@@ -1267,8 +1267,8 @@ packages:
   hast-util-whitespace@3.0.0:
     resolution: {integrity: sha512-88JUN06ipLwsnv+dVn+OIYOvAuvBMy/Qoi6O7mQHxdPXpjy+Cd6xRkWwux7DKO+4sYILtLBRIKgsdpS2gQc7qw==}
 
-  hono@4.11.9:
-    resolution: {integrity: sha512-Eaw2YTGM6WOxA6CXbckaEvslr2Ne4NFsKrvc0v97JD5awbmeBLO5w9Ho9L9kmKonrwF9RJlW6BxT1PVv/agBHQ==}
+  hono@4.12.1:
+    resolution: {integrity: sha512-hi9afu8g0lfJVLolxElAZGANCTTl6bewIdsRNhaywfP9K8BPf++F2z6OLrYGIinUwpRKzbZHMhPwvc0ZEpAwGw==}
     engines: {node: '>=16.9.0'}
 
   html-url-attributes@3.0.1:
@@ -2230,9 +2230,9 @@ snapshots:
   '@esbuild/win32-x64@0.27.3':
     optional: true
 
-  '@hono/node-server@1.19.9(hono@4.11.9)':
+  '@hono/node-server@1.19.9(hono@4.12.1)':
     dependencies:
-      hono: 4.11.9
+      hono: 4.12.1
 
   '@img/sharp-darwin-arm64@0.34.5':
     optionalDependencies:
@@ -2789,7 +2789,7 @@ snapshots:
     dependencies:
       '@types/hast': 3.0.4
 
-  hono@4.11.9: {}
+  hono@4.12.1: {}
 
   html-url-attributes@3.0.1: {}
 
