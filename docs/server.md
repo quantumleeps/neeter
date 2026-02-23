@@ -110,6 +110,19 @@ The `PermissionGate` on each session manages the deferred promises internally â€
 | `"acceptEdits"` | File edits auto-approved, other tools require approval |
 | `"plan"` | Planning mode â€” SDK-defined behavior |
 
+Tools listed in `allowedTools` are pre-approved by the SDK and skip the permission prompt, even when `permissionMode` is `"default"`. This lets you auto-approve safe operations while still gating destructive ones:
+
+```typescript
+const sessions = new SessionManager(() => ({
+  context: {},
+  model: "claude-sonnet-4-5-20250929",
+  systemPrompt: "You are a helpful assistant.",
+  tools: ["Read", "Write", "Edit", "Glob", "Grep"],
+  allowedTools: ["Read", "Glob", "Grep"],  // auto-approved
+  // Write and Edit will still require browser approval
+}));
+```
+
 ## Session resume & persistence
 
 <p>
