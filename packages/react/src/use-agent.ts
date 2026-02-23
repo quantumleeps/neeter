@@ -1,5 +1,10 @@
-import type { CustomEvent, PermissionRequest, PermissionResponse } from "@neeter/types";
-import { useCallback, useEffect, useRef, useSyncExternalStore } from "react";
+import type {
+  CustomEvent,
+  PermissionRequest,
+  PermissionResponse,
+  SessionHistoryEntry,
+} from "@neeter/types";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { ChatStore } from "./store.js";
 
 export interface UseAgentConfig {
@@ -11,11 +16,13 @@ export interface UseAgentConfig {
 export interface UseAgentReturn {
   sessionId: string | null;
   sdkSessionId: string | null;
+  sessionHistory: SessionHistoryEntry[];
   sendMessage: (text: string) => Promise<void>;
   stopSession: () => Promise<void>;
   respondToPermission: (response: PermissionResponse) => Promise<void>;
   resumeSession: (options?: { fork?: boolean; sdkSessionId?: string }) => Promise<void>;
   newSession: () => Promise<void>;
+  refreshHistory: () => Promise<void>;
 }
 
 export function useAgent(store: ChatStore, config?: UseAgentConfig): UseAgentReturn {
@@ -27,6 +34,7 @@ export function useAgent(store: ChatStore, config?: UseAgentConfig): UseAgentRet
 
   const sessionId = useSyncExternalStore(store.subscribe, () => store.getState().sessionId);
   const sdkSessionId = useSyncExternalStore(store.subscribe, () => store.getState().sdkSessionId);
+  const [sessionHistory, setSessionHistory] = useState<SessionHistoryEntry[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -231,6 +239,15 @@ export function useAgent(store: ChatStore, config?: UseAgentConfig): UseAgentRet
     [endpoint, store],
   );
 
+  const refreshHistory = useCallback(async () => {
+    try {
+      const res = await fetch(`${endpoint}/sessions/history`);
+      if (res.ok) setSessionHistory(await res.json());
+    } catch {
+      /* ignore */
+    }
+  }, [endpoint]);
+
   const newSession = useCallback(async () => {
     if (eventSourceRef.current) {
       eventSourceRef.current.close();
@@ -247,10 +264,12 @@ export function useAgent(store: ChatStore, config?: UseAgentConfig): UseAgentRet
   return {
     sessionId,
     sdkSessionId,
+    sessionHistory,
     sendMessage,
     stopSession,
     respondToPermission,
     resumeSession,
     newSession,
+    refreshHistory,
   };
 }

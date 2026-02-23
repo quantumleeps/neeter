@@ -14,6 +14,10 @@ export function createAgentRouter<TCtx>(config: {
 
   app.use(`${basePath}/*`, cors({ origin: "*" }));
 
+  app.get(`${basePath}/sessions/history`, (c) => {
+    return c.json(sessions.listHistory());
+  });
+
   app.post(`${basePath}/sessions`, (c) => {
     const session = sessions.create();
     return c.json({ sessionId: session.id });

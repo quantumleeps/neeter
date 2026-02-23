@@ -6,9 +6,20 @@ import {
   useChatStore,
 } from "@neeter/react";
 import type { CustomEvent } from "@neeter/types";
-import { ArrowRight, Check, Copy, History, Plus, RotateCcw } from "lucide-react";
+import { ArrowRight, Check, Copy, History, Plus } from "lucide-react";
 import { Highlight, themes } from "prism-react-renderer";
 import { type RefObject, useCallback, useRef, useState } from "react";
+
+function relativeTime(ts: number): string {
+  const seconds = Math.floor((Date.now() - ts) / 1000);
+  if (seconds < 60) return "just now";
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
 
 function CostBadge() {
   const cost = useChatStore((s) => s.totalCost);
@@ -17,14 +28,22 @@ function CostBadge() {
 }
 
 function Layout({ iframeRef }: { iframeRef: RefObject<HTMLIFrameElement | null> }) {
-  const { sessionId, sdkSessionId, sendMessage, stopSession, resumeSession, newSession } =
-    useAgentContext();
+  const {
+    sessionId,
+    sdkSessionId,
+    sessionHistory,
+    sendMessage,
+    stopSession,
+    resumeSession,
+    newSession,
+    refreshHistory,
+  } = useAgentContext();
   const isStreaming = useChatStore((s) => s.isStreaming);
   const [codeOpen, setCodeOpen] = useState(false);
   const [code, setCode] = useState("");
-  const [previousSdkSessionId, setPreviousSdkSessionId] = useState<string | null>(null);
   const [resumeInput, setResumeInput] = useState("");
   const [showResumePanel, setShowResumePanel] = useState(false);
+  const [showManualInput, setShowManualInput] = useState(false);
 
   // Track the "active" sdkSessionId locally so it survives store.reset() during resume
   const [displaySdkSessionId, setDisplaySdkSessionId] = useState<string | null>(null);
@@ -33,10 +52,9 @@ function Layout({ iframeRef }: { iframeRef: RefObject<HTMLIFrameElement | null> 
   }
 
   const handleNewSession = useCallback(async () => {
-    if (displaySdkSessionId) setPreviousSdkSessionId(displaySdkSessionId);
     setDisplaySdkSessionId(null);
     await newSession();
-  }, [displaySdkSessionId, newSession]);
+  }, [newSession]);
 
   const handleResume = useCallback(
     async (targetId: string) => {
@@ -88,7 +106,11 @@ function Layout({ iframeRef }: { iframeRef: RefObject<HTMLIFrameElement | null> 
               <CostBadge />
               <button
                 type="button"
-                onClick={() => setShowResumePanel((v) => !v)}
+                onClick={() => {
+                  const opening = !showResumePanel;
+                  setShowResumePanel(opening);
+                  if (opening) refreshHistory();
+                }}
                 className="text-muted-foreground hover:text-foreground"
                 title="Resume session"
               >
@@ -106,39 +128,58 @@ function Layout({ iframeRef }: { iframeRef: RefObject<HTMLIFrameElement | null> 
             </div>
           </div>
           {showResumePanel && (
-            <div className="mt-2 flex flex-col gap-1.5 text-xs">
-              {previousSdkSessionId && (
+            <div className="mt-2 flex flex-col gap-1 text-xs">
+              {sessionHistory
+                .filter((e) => e.sdkSessionId !== displaySdkSessionId)
+                .map((entry) => (
+                  <button
+                    key={entry.sdkSessionId}
+                    type="button"
+                    onClick={() => handleResume(entry.sdkSessionId)}
+                    className="flex items-center justify-between gap-2 rounded px-2 py-1.5 text-left text-muted-foreground hover:bg-muted hover:text-foreground"
+                  >
+                    <span className="truncate">
+                      {entry.description || entry.sdkSessionId.slice(0, 8)}
+                    </span>
+                    <span className="shrink-0 tabular-nums text-[10px]">
+                      {relativeTime(entry.lastActivityAt)}
+                    </span>
+                  </button>
+                ))}
+              {sessionHistory.filter((e) => e.sdkSessionId !== displaySdkSessionId).length ===
+                0 && <span className="px-2 py-1 text-muted-foreground">No other sessions</span>}
+              {showManualInput ? (
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (resumeInput.trim()) handleResume(resumeInput.trim());
+                  }}
+                  className="flex items-center gap-1 mt-1"
+                >
+                  <input
+                    type="text"
+                    value={resumeInput}
+                    onChange={(e) => setResumeInput(e.target.value)}
+                    placeholder="Session ID..."
+                    className="flex-1 rounded border border-muted bg-transparent px-2 py-1 font-mono text-xs"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!resumeInput.trim()}
+                    className="rounded border border-muted p-1 text-muted-foreground hover:text-foreground disabled:opacity-30"
+                  >
+                    <ArrowRight className="size-3" />
+                  </button>
+                </form>
+              ) : (
                 <button
                   type="button"
-                  onClick={() => handleResume(previousSdkSessionId)}
-                  className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground"
+                  onClick={() => setShowManualInput(true)}
+                  className="px-2 py-1 text-[10px] text-muted-foreground hover:text-foreground text-left"
                 >
-                  <RotateCcw className="size-3" />
-                  <span className="font-mono">{previousSdkSessionId.slice(0, 8)}</span>
+                  Enter ID manually
                 </button>
               )}
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (resumeInput.trim()) handleResume(resumeInput.trim());
-                }}
-                className="flex items-center gap-1"
-              >
-                <input
-                  type="text"
-                  value={resumeInput}
-                  onChange={(e) => setResumeInput(e.target.value)}
-                  placeholder="Session ID..."
-                  className="flex-1 rounded border border-muted bg-transparent px-2 py-1 font-mono text-xs"
-                />
-                <button
-                  type="submit"
-                  disabled={!resumeInput.trim()}
-                  className="rounded border border-muted p-1 text-muted-foreground hover:text-foreground disabled:opacity-30"
-                >
-                  <ArrowRight className="size-3" />
-                </button>
-              </form>
             </div>
           )}
         </header>

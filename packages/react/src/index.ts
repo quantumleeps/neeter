@@ -16,6 +16,7 @@ export type {
   CustomEvent,
   PermissionRequest,
   PermissionResponse,
+  SessionHistoryEntry,
   SessionInitEvent,
   SSEEvent,
   ToolApprovalRequest,

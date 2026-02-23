@@ -16,6 +16,13 @@ export interface SessionInitEvent {
   tools: string[];
 }
 
+export interface SessionHistoryEntry {
+  sdkSessionId: string;
+  description: string;
+  createdAt: number;
+  lastActivityAt: number;
+}
+
 // --- Chat Store ---
 
 export type ToolCallPhase = "pending" | "streaming_input" | "running" | "complete" | "error";

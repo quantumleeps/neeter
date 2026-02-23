@@ -16,10 +16,14 @@ interface FetchCall {
 
 let fetchCalls: FetchCall[] = [];
 let fetchSessionId = "new-session-1";
+let fetchHistoryResponse: unknown[] = [];
 
 const mockFetch = vi.fn(async (url: string | URL | Request, opts?: RequestInit) => {
   const body = opts?.body ? JSON.parse(opts.body as string) : undefined;
   fetchCalls.push({ url: url as string, method: opts?.method, body });
+  if ((url as string).endsWith("/sessions/history")) {
+    return { ok: true, json: async () => fetchHistoryResponse } as Response;
+  }
   return { json: async () => ({ sessionId: fetchSessionId }) } as Response;
 });
 
@@ -38,6 +42,7 @@ class MockEventSource {
 beforeEach(() => {
   fetchCalls = [];
   fetchSessionId = "new-session-1";
+  fetchHistoryResponse = [];
   MockEventSource.instances = [];
   vi.stubGlobal("fetch", mockFetch);
   vi.stubGlobal("EventSource", MockEventSource);
@@ -172,6 +177,35 @@ describe("useAgent", () => {
       await act(() => result.current.newSession());
 
       expect(es.close).toHaveBeenCalled();
+    });
+  });
+
+  describe("refreshHistory", () => {
+    it("fetches session history from the endpoint", async () => {
+      fetchHistoryResponse = [
+        { sdkSessionId: "sdk-1", description: "Blue card", createdAt: 1000, lastActivityAt: 2000 },
+      ];
+
+      const store = createChatStore();
+      const { result } = renderHook(() => useAgent(store, { endpoint: "/api" }));
+      await waitFor(() => expect(store.getState().sessionId).toBe("new-session-1"));
+
+      fetchCalls = [];
+      await act(() => result.current.refreshHistory());
+
+      expect(fetchCalls).toHaveLength(1);
+      expect(fetchCalls[0].url).toBe("/api/sessions/history");
+      expect(result.current.sessionHistory).toEqual([
+        { sdkSessionId: "sdk-1", description: "Blue card", createdAt: 1000, lastActivityAt: 2000 },
+      ]);
+    });
+
+    it("starts with empty session history", async () => {
+      const store = createChatStore();
+      const { result } = renderHook(() => useAgent(store, { endpoint: "/api" }));
+      await waitFor(() => expect(store.getState().sessionId).toBe("new-session-1"));
+
+      expect(result.current.sessionHistory).toEqual([]);
     });
   });
 });

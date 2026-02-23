@@ -4,7 +4,7 @@ import {
   query,
   type SDKUserMessage,
 } from "@anthropic-ai/claude-agent-sdk";
-import type { UserQuestion } from "@neeter/types";
+import type { SessionHistoryEntry, UserQuestion } from "@neeter/types";
 import { PermissionGate } from "./permission-gate.js";
 import { PushChannel } from "./push-channel.js";
 
@@ -42,6 +42,7 @@ export interface ResumeOptions {
 export interface Session<TCtx> {
   id: string;
   sdkSessionId?: string;
+  firstPrompt?: string;
   cwd?: string;
   context: TCtx;
   pushMessage(text: string): void;
@@ -95,6 +96,20 @@ export class SessionManager<TCtx> {
       if (session.sdkSessionId === sdkSessionId) return session;
     }
     return undefined;
+  }
+
+  listHistory(): SessionHistoryEntry[] {
+    const entries: SessionHistoryEntry[] = [];
+    for (const session of this.sessions.values()) {
+      if (!session.sdkSessionId) continue;
+      entries.push({
+        sdkSessionId: session.sdkSessionId,
+        description: session.firstPrompt ?? "",
+        createdAt: session.createdAt,
+        lastActivityAt: session.lastActivityAt,
+      });
+    }
+    return entries.sort((a, b) => b.lastActivityAt - a.lastActivityAt);
   }
 
   cleanup() {
@@ -188,6 +203,7 @@ export class SessionManager<TCtx> {
       context: init.context,
       pushMessage: (text: string) => {
         session.lastActivityAt = Date.now();
+        if (!session.firstPrompt) session.firstPrompt = text;
         channel.push(userMessage(text));
       },
       messageIterator,
