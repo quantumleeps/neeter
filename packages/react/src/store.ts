@@ -288,7 +288,11 @@ export function replayEvents(store: ChatStore, events: SSEEvent[]): void {
         s.finalizeToolCall(data.id, data.name, data.input);
         break;
       case "tool_result":
-        s.completeToolCall(data.toolUseId, data.result);
+        if (data.isError) {
+          s.errorToolCall(data.toolUseId, data.result);
+        } else {
+          s.completeToolCall(data.toolUseId, data.result);
+        }
         break;
       case "turn_complete":
         s.flushStreamingThinking();

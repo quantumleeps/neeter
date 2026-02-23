@@ -151,11 +151,12 @@ export class MessageTranslator<TCtx> {
           for (const block of msg.content) {
             if (block.type === "tool_result") {
               const text = extractToolResultText(block);
+              const isError = block.is_error === true;
               const toolName = this.toolNames.get(block.tool_use_id as string);
 
               events.push({
                 event: "tool_result",
-                data: JSON.stringify({ toolUseId: block.tool_use_id, result: text }),
+                data: JSON.stringify({ toolUseId: block.tool_use_id, result: text, isError }),
               });
 
               if (this.config.onToolResult && toolName) {
