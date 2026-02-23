@@ -90,3 +90,17 @@ export interface UserQuestionResponse {
 }
 
 export type PermissionResponse = ToolApprovalResponse | UserQuestionResponse;
+
+// --- Persistence ---
+
+export interface SessionRecord {
+  meta: SessionHistoryEntry;
+  events: SSEEvent[];
+}
+
+export interface SessionStore {
+  save(sdkSessionId: string, record: SessionRecord): Promise<void>;
+  load(sdkSessionId: string): Promise<SessionRecord | null>;
+  list(): Promise<SessionHistoryEntry[]>;
+  delete(sdkSessionId: string): Promise<void>;
+}

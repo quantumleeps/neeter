@@ -1,8 +1,20 @@
-import type { PermissionResponse } from "@neeter/types";
+import type { PermissionResponse, SSEEvent } from "@neeter/types";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import type { SessionManager } from "./session.js";
+import { type Session, type SessionManager, sessionMeta } from "./session.js";
 import { type MessageTranslator, sseEncode, streamSession } from "./translator.js";
+
+const PERSISTED_EVENTS = new Set([
+  "text_delta",
+  "thinking_delta",
+  "tool_start",
+  "tool_call",
+  "tool_result",
+  "turn_complete",
+  "session_init",
+  "session_error",
+  "custom",
+]);
 
 export function createAgentRouter<TCtx>(config: {
   sessions: SessionManager<TCtx>;
@@ -11,11 +23,12 @@ export function createAgentRouter<TCtx>(config: {
 }): Hono {
   const { sessions, translator, basePath = "/api" } = config;
   const app = new Hono();
+  const pendingUserMessages = new WeakMap<Session<TCtx>, string[]>();
 
   app.use(`${basePath}/*`, cors({ origin: "*" }));
 
-  app.get(`${basePath}/sessions/history`, (c) => {
-    return c.json(sessions.listHistory());
+  app.get(`${basePath}/sessions/history`, async (c) => {
+    return c.json(await sessions.listHistory());
   });
 
   app.post(`${basePath}/sessions`, (c) => {
@@ -42,7 +55,21 @@ export function createAgentRouter<TCtx>(config: {
     const body = await c.req.json<{ text: string }>();
     if (!body.text?.trim()) return c.json({ error: "Message text required" }, 400);
 
-    session.pushMessage(body.text.trim());
+    const text = body.text.trim();
+    session.pushMessage(text);
+
+    const store = sessions.getStore();
+    if (store && session.sdkSessionId) {
+      void store.save(session.sdkSessionId, {
+        meta: sessionMeta(session),
+        events: [{ event: "user_message", data: JSON.stringify({ text }) }],
+      });
+    } else if (store) {
+      const pending = pendingUserMessages.get(session) ?? [];
+      pending.push(text);
+      pendingUserMessages.set(session, pending);
+    }
+
     return c.json({ ok: true });
   });
 
@@ -50,11 +77,37 @@ export function createAgentRouter<TCtx>(config: {
     const session = sessions.get(c.req.param("id"));
     if (!session) return c.json({ error: "Session not found" }, 404);
 
+    const store = sessions.getStore();
+    const persistEvent = store
+      ? (evt: SSEEvent) => {
+          if (!session.sdkSessionId || !PERSISTED_EVENTS.has(evt.event)) return;
+          if (evt.event === "session_init") {
+            const pending = pendingUserMessages.get(session);
+            if (pending) {
+              const userEvents = pending.map((text) => ({
+                event: "user_message",
+                data: JSON.stringify({ text }),
+              }));
+              void store.save(session.sdkSessionId, {
+                meta: sessionMeta(session),
+                events: [...userEvents, evt],
+              });
+              pendingUserMessages.delete(session);
+              return;
+            }
+          }
+          void store.save(session.sdkSessionId, {
+            meta: sessionMeta(session),
+            events: [evt],
+          });
+        }
+      : undefined;
+
     const stream = new ReadableStream({
       async start(controller) {
         const encoder = new TextEncoder();
         try {
-          for await (const evt of streamSession(session, translator)) {
+          for await (const evt of streamSession(session, translator, persistEvent)) {
             controller.enqueue(encoder.encode(sseEncode(evt)));
           }
         } catch (err) {
@@ -75,6 +128,11 @@ export function createAgentRouter<TCtx>(config: {
         Connection: "keep-alive",
       },
     });
+  });
+
+  app.get(`${basePath}/sessions/replay/:sdkSessionId`, async (c) => {
+    const events = await sessions.loadEvents(c.req.param("sdkSessionId"));
+    return c.json(events);
   });
 
   app.post(`${basePath}/sessions/:id/permissions`, async (c) => {

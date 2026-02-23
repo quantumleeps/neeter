@@ -36,7 +36,7 @@ export { MessageList } from "./MessageList.js";
 export { PendingPermissions } from "./PendingPermissions.js";
 export { getWidget, registerWidget, stripMcpPrefix } from "./registry.js";
 export { StatusDot } from "./StatusDot.js";
-export { type ChatStore, type ChatStoreShape, createChatStore } from "./store.js";
+export { type ChatStore, type ChatStoreShape, createChatStore, replayEvents } from "./store.js";
 export { TextMessage } from "./TextMessage.js";
 export { ThinkingBlock } from "./ThinkingBlock.js";
 export { ThinkingIndicator } from "./ThinkingIndicator.js";

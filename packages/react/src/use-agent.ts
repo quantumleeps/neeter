@@ -3,9 +3,10 @@ import type {
   PermissionRequest,
   PermissionResponse,
   SessionHistoryEntry,
+  SSEEvent,
 } from "@neeter/types";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import type { ChatStore } from "./store.js";
+import { type ChatStore, replayEvents } from "./store.js";
 
 export interface UseAgentConfig {
   endpoint?: string;
@@ -41,6 +42,15 @@ export function useAgent(store: ChatStore, config?: UseAgentConfig): UseAgentRet
     async function init() {
       let res: Response;
       if (resumeSessionId) {
+        try {
+          const eventsRes = await fetch(`${endpoint}/sessions/replay/${resumeSessionId}`);
+          if (eventsRes.ok && !cancelled) {
+            const events: SSEEvent[] = await eventsRes.json();
+            replayEvents(store, events);
+          }
+        } catch {
+          /* replay is best-effort */
+        }
         res = await fetch(`${endpoint}/sessions/resume`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -224,6 +234,16 @@ export function useAgent(store: ChatStore, config?: UseAgentConfig): UseAgentRet
       }
 
       store.getState().reset();
+
+      try {
+        const eventsRes = await fetch(`${endpoint}/sessions/replay/${targetSdkSessionId}`);
+        if (eventsRes.ok) {
+          const events: SSEEvent[] = await eventsRes.json();
+          replayEvents(store, events);
+        }
+      } catch {
+        /* replay is best-effort */
+      }
 
       const res = await fetch(`${endpoint}/sessions/resume`, {
         method: "POST",

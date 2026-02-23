@@ -1,5 +1,8 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.0.0/schema.json",
+  "files": {
+    "includes": ["**", "!**/dist", "!**/sandboxes", "!**/.neeter-data"]
+  },
   "formatter": {
     "indentStyle": "space",
     "indentWidth": 2,

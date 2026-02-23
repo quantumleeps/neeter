@@ -1,4 +1,4 @@
-import type { ChatMessage, PermissionRequest, ToolCallInfo } from "@neeter/types";
+import type { ChatMessage, PermissionRequest, SSEEvent, ToolCallInfo } from "@neeter/types";
 import { immer } from "zustand/middleware/immer";
 import { createStore, type StoreApi } from "zustand/vanilla";
 
@@ -249,4 +249,48 @@ export function createChatStore(): ChatStore {
         }),
     })),
   );
+}
+
+export function replayEvents(store: ChatStore, events: SSEEvent[]): void {
+  const s = store.getState();
+  for (const evt of events) {
+    const data = JSON.parse(evt.data);
+    switch (evt.event) {
+      case "user_message":
+        s.addUserMessage(data.text);
+        break;
+      case "session_init":
+        s.setSdkSessionId(data.sdkSessionId);
+        break;
+      case "thinking_delta":
+        s.appendStreamingThinking(data.text);
+        break;
+      case "text_delta":
+        s.flushStreamingThinking();
+        s.appendStreamingText(data.text);
+        break;
+      case "tool_start":
+        s.flushStreamingThinking();
+        s.flushStreamingText();
+        s.startToolCall(data.id, data.name);
+        break;
+      case "tool_call":
+        s.flushStreamingText();
+        s.finalizeToolCall(data.id, data.name, data.input);
+        break;
+      case "tool_result":
+        s.completeToolCall(data.toolUseId, data.result);
+        break;
+      case "turn_complete":
+        s.flushStreamingThinking();
+        s.flushStreamingText();
+        s.addCost(data.cost ?? 0, data.numTurns ?? 0);
+        break;
+      case "session_error":
+        s.flushStreamingThinking();
+        s.flushStreamingText();
+        s.addSystemMessage(`Session ended: ${data.subtype}`);
+        break;
+    }
+  }
 }

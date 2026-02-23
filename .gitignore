@@ -29,6 +29,7 @@ service-account*.json
 
 # example sandboxes
 sandboxes/
+.neeter-data/
 
 # claude
 .claude/

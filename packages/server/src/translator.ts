@@ -230,6 +230,7 @@ export function sseEncode(evt: SSEEvent): string {
 export async function* streamSession<TCtx>(
   session: Session<TCtx>,
   translator: MessageTranslator<TCtx>,
+  onEvent?: (evt: SSEEvent) => void,
 ): AsyncGenerator<SSEEvent> {
   const output = new PushChannel<SSEEvent>();
 
@@ -260,6 +261,7 @@ export async function* streamSession<TCtx>(
   driveMessages();
 
   for await (const evt of output) {
+    onEvent?.(evt);
     yield evt;
   }
 }

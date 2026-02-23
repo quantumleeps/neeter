@@ -4,7 +4,7 @@ import {
   query,
   type SDKUserMessage,
 } from "@anthropic-ai/claude-agent-sdk";
-import type { SessionHistoryEntry, UserQuestion } from "@neeter/types";
+import type { SessionHistoryEntry, SessionStore, SSEEvent, UserQuestion } from "@neeter/types";
 import { PermissionGate } from "./permission-gate.js";
 import { PushChannel } from "./push-channel.js";
 
@@ -53,16 +53,39 @@ export interface Session<TCtx> {
   lastActivityAt: number;
 }
 
+export function sessionMeta(session: Session<unknown>): SessionHistoryEntry {
+  return {
+    sdkSessionId: session.sdkSessionId ?? "",
+    description: session.firstPrompt ?? "",
+    createdAt: session.createdAt,
+    lastActivityAt: session.lastActivityAt,
+  };
+}
+
 const DEFAULT_IDLE_TIMEOUT_MS = 30 * 60 * 1000;
+
+export interface SessionManagerOptions {
+  idleTimeoutMs?: number;
+  store?: SessionStore;
+}
 
 export class SessionManager<TCtx> {
   private sessions = new Map<string, Session<TCtx>>();
   private factory: (original?: Session<TCtx>) => SessionInit<TCtx>;
   private idleTimeoutMs: number;
+  private store?: SessionStore;
 
-  constructor(factory: (original?: Session<TCtx>) => SessionInit<TCtx>, idleTimeoutMs?: number) {
+  constructor(
+    factory: (original?: Session<TCtx>) => SessionInit<TCtx>,
+    options?: number | SessionManagerOptions,
+  ) {
     this.factory = factory;
-    this.idleTimeoutMs = idleTimeoutMs ?? DEFAULT_IDLE_TIMEOUT_MS;
+    if (typeof options === "number") {
+      this.idleTimeoutMs = options;
+    } else {
+      this.idleTimeoutMs = options?.idleTimeoutMs ?? DEFAULT_IDLE_TIMEOUT_MS;
+      this.store = options?.store;
+    }
   }
 
   create(): Session<TCtx> {
@@ -98,16 +121,24 @@ export class SessionManager<TCtx> {
     return undefined;
   }
 
-  listHistory(): SessionHistoryEntry[] {
+  getStore(): SessionStore | undefined {
+    return this.store;
+  }
+
+  async loadEvents(sdkSessionId: string): Promise<SSEEvent[]> {
+    if (!this.store) return [];
+    const record = await this.store.load(sdkSessionId);
+    return record?.events ?? [];
+  }
+
+  async listHistory(): Promise<SessionHistoryEntry[]> {
+    if (this.store) {
+      return this.store.list();
+    }
     const entries: SessionHistoryEntry[] = [];
     for (const session of this.sessions.values()) {
       if (!session.sdkSessionId) continue;
-      entries.push({
-        sdkSessionId: session.sdkSessionId,
-        description: session.firstPrompt ?? "",
-        createdAt: session.createdAt,
-        lastActivityAt: session.lastActivityAt,
-      });
+      entries.push(sessionMeta(session));
     }
     return entries.sort((a, b) => b.lastActivityAt - a.lastActivityAt);
   }

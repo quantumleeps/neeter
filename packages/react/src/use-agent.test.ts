@@ -17,12 +17,16 @@ interface FetchCall {
 let fetchCalls: FetchCall[] = [];
 let fetchSessionId = "new-session-1";
 let fetchHistoryResponse: unknown[] = [];
+let fetchReplayResponse: unknown[] = [];
 
 const mockFetch = vi.fn(async (url: string | URL | Request, opts?: RequestInit) => {
   const body = opts?.body ? JSON.parse(opts.body as string) : undefined;
   fetchCalls.push({ url: url as string, method: opts?.method, body });
   if ((url as string).endsWith("/sessions/history")) {
     return { ok: true, json: async () => fetchHistoryResponse } as Response;
+  }
+  if ((url as string).includes("/sessions/replay/")) {
+    return { ok: true, json: async () => fetchReplayResponse } as Response;
   }
   return { json: async () => ({ sessionId: fetchSessionId }) } as Response;
 });
@@ -43,6 +47,7 @@ beforeEach(() => {
   fetchCalls = [];
   fetchSessionId = "new-session-1";
   fetchHistoryResponse = [];
+  fetchReplayResponse = [];
   MockEventSource.instances = [];
   vi.stubGlobal("fetch", mockFetch);
   vi.stubGlobal("EventSource", MockEventSource);
@@ -73,9 +78,10 @@ describe("useAgent", () => {
       const store = createChatStore();
       renderHook(() => useAgent(store, { endpoint: "/api", resumeSessionId: "sdk-abc" }));
 
-      await waitFor(() => expect(fetchCalls).toHaveLength(1));
-      expect(fetchCalls[0].url).toBe("/api/sessions/resume");
-      expect(fetchCalls[0].body).toEqual({ sdkSessionId: "sdk-abc" });
+      await waitFor(() => expect(fetchCalls).toHaveLength(2));
+      expect(fetchCalls[0].url).toBe("/api/sessions/replay/sdk-abc");
+      expect(fetchCalls[1].url).toBe("/api/sessions/resume");
+      expect(fetchCalls[1].body).toEqual({ sdkSessionId: "sdk-abc" });
       expect(store.getState().sessionId).toBe("new-session-1");
     });
   });
@@ -93,9 +99,10 @@ describe("useAgent", () => {
 
       await act(() => result.current.resumeSession({ sdkSessionId: "explicit-id" }));
 
-      expect(fetchCalls).toHaveLength(1);
-      expect(fetchCalls[0].url).toBe("/api/sessions/resume");
-      expect(fetchCalls[0].body).toEqual({ sdkSessionId: "explicit-id", forkSession: undefined });
+      expect(fetchCalls).toHaveLength(2);
+      expect(fetchCalls[0].url).toBe("/api/sessions/replay/explicit-id");
+      expect(fetchCalls[1].url).toBe("/api/sessions/resume");
+      expect(fetchCalls[1].body).toEqual({ sdkSessionId: "explicit-id", forkSession: undefined });
       expect(store.getState().sessionId).toBe("resumed-session");
     });
 
@@ -111,7 +118,8 @@ describe("useAgent", () => {
 
       await act(() => result.current.resumeSession());
 
-      expect(fetchCalls[0].body).toEqual({ sdkSessionId: "store-sdk-id", forkSession: undefined });
+      expect(fetchCalls[0].url).toBe("/api/sessions/replay/store-sdk-id");
+      expect(fetchCalls[1].body).toEqual({ sdkSessionId: "store-sdk-id", forkSession: undefined });
     });
 
     it("no-ops when no sdkSessionId is available", async () => {
@@ -135,10 +143,33 @@ describe("useAgent", () => {
 
       fetchCalls = [];
       fetchSessionId = "resumed-session";
+      fetchReplayResponse = [];
       await act(() => result.current.resumeSession());
 
       expect(store.getState().messages).toHaveLength(0);
       expect(store.getState().sessionId).toBe("resumed-session");
+    });
+
+    it("replays stored events into the store on resume", async () => {
+      const store = createChatStore();
+      store.getState().setSdkSessionId("sdk-1");
+
+      const { result } = renderHook(() => useAgent(store, { endpoint: "/api" }));
+      await waitFor(() => expect(store.getState().sessionId).toBe("new-session-1"));
+
+      fetchCalls = [];
+      fetchSessionId = "resumed-session";
+      fetchReplayResponse = [
+        { event: "user_message", data: JSON.stringify({ text: "Hello" }) },
+        { event: "text_delta", data: JSON.stringify({ text: "Hi!" }) },
+        { event: "turn_complete", data: JSON.stringify({ cost: 0.01, numTurns: 1 }) },
+      ];
+
+      await act(() => result.current.resumeSession());
+
+      expect(store.getState().messages).toHaveLength(2);
+      expect(store.getState().messages[0]).toMatchObject({ role: "user", content: "Hello" });
+      expect(store.getState().messages[1]).toMatchObject({ role: "assistant", content: "Hi!" });
     });
   });
 

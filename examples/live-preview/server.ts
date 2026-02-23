@@ -3,6 +3,7 @@ import { extname, join, normalize, resolve } from "node:path";
 import { serve } from "@hono/node-server";
 import {
   createAgentRouter,
+  createJsonSessionStore,
   createSandboxHook,
   MessageTranslator,
   SessionManager,
@@ -13,7 +14,10 @@ import { Hono } from "hono";
 // a Claude Code session, CLAUDECODE causes the subprocess to refuse to start.
 delete process.env.CLAUDECODE;
 
+const PERSIST = process.argv.includes("--persist");
+
 const SANDBOXES_DIR = resolve("sandboxes");
+const DATA_DIR = resolve(".neeter-data");
 
 // HTML shell template — app.jsx content is injected at serve time via {{APP_CODE}}.
 // The agent only reads/edits app.jsx; this template never touches the sandbox.
@@ -83,29 +87,30 @@ interface SessionContext {
   sandboxDir: string;
 }
 
-const sessions = new SessionManager<SessionContext>((original) => {
-  const sandboxDir =
-    original?.context.sandboxDir ??
-    (() => {
-      const id = crypto.randomUUID();
-      const dir = resolve(SANDBOXES_DIR, id);
-      mkdirSync(dir, { recursive: true });
-      writeFileSync(join(dir, "app.jsx"), SCAFFOLD_APP);
-      return dir;
-    })();
+const sessions = new SessionManager<SessionContext>(
+  (original) => {
+    const sandboxDir =
+      original?.context.sandboxDir ??
+      (() => {
+        const id = crypto.randomUUID();
+        const dir = resolve(SANDBOXES_DIR, id);
+        mkdirSync(dir, { recursive: true });
+        writeFileSync(join(dir, "app.jsx"), SCAFFOLD_APP);
+        return dir;
+      })();
 
-  return {
-    context: { sandboxDir },
-    model: "claude-haiku-4-5-20251001",
-    cwd: sandboxDir,
-    permissionMode: "default",
-    tools: ["Read", "Write", "Edit", "Glob", "Grep", "TodoWrite"],
-    allowedTools: ["Read", "Glob", "Grep", "Edit", "TodoWrite"],
-    disallowedTools: ["WebFetch", "WebSearch", "NotebookEdit"],
-    hooks: {
-      PreToolUse: createSandboxHook(sandboxDir, resolve),
-    },
-    systemPrompt: `You are a creative web developer. Your workspace is ${sandboxDir}.
+    return {
+      context: { sandboxDir },
+      model: "claude-haiku-4-5-20251001",
+      cwd: sandboxDir,
+      permissionMode: "default",
+      tools: ["Read", "Write", "Edit", "Glob", "Grep", "TodoWrite"],
+      allowedTools: ["Read", "Glob", "Grep", "Edit", "TodoWrite"],
+      disallowedTools: ["WebFetch", "WebSearch", "NotebookEdit"],
+      hooks: {
+        PreToolUse: createSandboxHook(sandboxDir, resolve),
+      },
+      systemPrompt: `You are a creative web developer. Your workspace is ${sandboxDir}.
 
 Workflow:
 1. Read app.jsx first — it contains the React app code
@@ -132,8 +137,10 @@ Usage: import from bare specifiers (e.g. import * as d3 from "d3").
 For packages NOT in the import map, use full URLs: import x from "https://esm.sh/package-name".
 
 You are building a live preview that the user can see updating in real time.`,
-  };
-});
+    };
+  },
+  { store: PERSIST ? createJsonSessionStore(DATA_DIR) : undefined },
+);
 
 const translator = new MessageTranslator<SessionContext>({
   onToolResult: (toolName) => {
