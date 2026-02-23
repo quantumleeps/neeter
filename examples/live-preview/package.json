@@ -15,7 +15,7 @@
     "@neeter/react": "workspace:*",
     "@neeter/server": "workspace:*",
     "@neeter/types": "workspace:*",
-    "hono": "^4.11.9",
+    "hono": "^4.12.2",
     "immer": "^11.1.4",
     "lucide-react": "^0.575.0",
     "prism-react-renderer": "^2.4.1",
