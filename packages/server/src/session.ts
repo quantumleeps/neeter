@@ -56,10 +56,10 @@ const DEFAULT_IDLE_TIMEOUT_MS = 30 * 60 * 1000;
 
 export class SessionManager<TCtx> {
   private sessions = new Map<string, Session<TCtx>>();
-  private factory: () => SessionInit<TCtx>;
+  private factory: (original?: Session<TCtx>) => SessionInit<TCtx>;
   private idleTimeoutMs: number;
 
-  constructor(factory: () => SessionInit<TCtx>, idleTimeoutMs?: number) {
+  constructor(factory: (original?: Session<TCtx>) => SessionInit<TCtx>, idleTimeoutMs?: number) {
     this.factory = factory;
     this.idleTimeoutMs = idleTimeoutMs ?? DEFAULT_IDLE_TIMEOUT_MS;
   }
@@ -69,15 +69,8 @@ export class SessionManager<TCtx> {
   }
 
   resume(options: ResumeOptions): Session<TCtx> {
-    const init = this.factory();
-
-    // Reuse the original session's cwd and context so the SDK can find its
-    // persisted conversation data (stored under ~/.claude/projects/-<cwd-path>/).
     const original = this.findBySdkSessionId(options.sdkSessionId);
-    if (original) {
-      if (original.cwd) init.cwd = original.cwd;
-      init.context = original.context;
-    }
+    const init = this.factory(original);
 
     return this.buildSession(init, {
       resume: options.sdkSessionId,

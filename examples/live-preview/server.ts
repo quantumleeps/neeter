@@ -83,11 +83,16 @@ interface SessionContext {
   sandboxDir: string;
 }
 
-const sessions = new SessionManager<SessionContext>(() => {
-  const sandboxId = crypto.randomUUID();
-  const sandboxDir = resolve(SANDBOXES_DIR, sandboxId);
-  mkdirSync(sandboxDir, { recursive: true });
-  writeFileSync(join(sandboxDir, "app.jsx"), SCAFFOLD_APP);
+const sessions = new SessionManager<SessionContext>((original) => {
+  const sandboxDir =
+    original?.context.sandboxDir ??
+    (() => {
+      const id = crypto.randomUUID();
+      const dir = resolve(SANDBOXES_DIR, id);
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(join(dir, "app.jsx"), SCAFFOLD_APP);
+      return dir;
+    })();
 
   return {
     context: { sandboxDir },
