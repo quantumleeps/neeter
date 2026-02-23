@@ -45,11 +45,14 @@ app.route("/", createAgentRouter({ sessions, translator }));
 serve({ fetch: app.fetch, port: 3000 });
 ```
 
-This gives you five endpoints:
+This gives you eight endpoints:
 
 | Method | Path | Description |
 |--------|------|-------------|
 | `POST` | `/api/sessions` | Create a session |
+| `POST` | `/api/sessions/resume` | Resume or fork a session by SDK session ID |
+| `GET` | `/api/sessions/history` | List previous sessions |
+| `GET` | `/api/sessions/replay/:sdkSessionId` | Load persisted events for UI replay |
 | `POST` | `/api/sessions/:id/messages` | Send a message |
 | `GET` | `/api/sessions/:id/events` | SSE event stream |
 | `POST` | `/api/sessions/:id/permissions` | Respond to a permission request |
@@ -62,6 +65,7 @@ This gives you five endpoints:
 - **Tool result hooks** — `onToolResult` lets you inspect what the agent did and emit structured custom events.
 - **Permission modes** — `bypassPermissions`, `default`, `acceptEdits`, or `plan` — with browser-side approval via `PermissionGate`.
 - **Extended thinking** — Pass `thinking: { type: "enabled", budgetTokens: N }` to stream chain-of-thought reasoning.
+- **Session resume & persistence** — Resume past conversations with `SessionManager.resume()`. Opt into persistence with `createJsonSessionStore` for history and event replay that survive server restarts.
 - **Abort** — Cancel the current agent turn mid-stream.
 - **Sandbox hooks** — `createSandboxHook` restricts file operations to a directory.
 

@@ -71,6 +71,7 @@ Without shadcn, import the bundled theme:
 - **Tool call lifecycle** — Each tool moves through `pending` → `streaming_input` → `running` → `complete` with streaming JSON input.
 - **Permissions UI** — `ToolApprovalCard` and `UserQuestionCard` for browser-side tool approval.
 - **Extended thinking** — Collapsible thinking blocks with streaming text.
+- **Session resume** — Resume past sessions with `resumeSession()`, start fresh with `newSession()`, and browse history with `refreshHistory()`. `replayEvents` reconstructs the chat UI from persisted events.
 - **Custom events** — Handle app-specific events from `onToolResult` via `AgentProvider`'s `onCustomEvent` prop.
 - **Abort** — Stop the agent mid-turn with `stopSession()` from `useAgentContext()`.
 

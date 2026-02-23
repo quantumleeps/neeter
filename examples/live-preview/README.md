@@ -28,7 +28,16 @@ cd examples/live-preview
 pnpm dev
 ```
 
-This starts:
+To enable session persistence (history and replay survive server restarts):
+
+```sh
+pnpm dev:persist
+```
+
+This writes JSONL event logs and metadata to `.neeter-data/`. Without the
+flag, sessions are in-memory only.
+
+Either command starts:
 
 - **Server** on `http://localhost:3000` (Hono + Claude Agent SDK)
 - **Client** on `http://localhost:5173` (Vite + React)
@@ -72,15 +81,19 @@ The import map makes these packages available via bare specifiers
 Browser
 ├── Left pane: chat (MessageList + ChatInput)
 ├── Right pane: <iframe> showing composed preview
+├── Header: session ID badge, history panel, new session button
 └── Code viewer: syntax-highlighted app.jsx overlay
 
 Server
-├── POST /api/sessions              → create session + sandbox dir
-├── POST /api/sessions/:id/messages → send user message
-├── POST /api/sessions/:id/abort    → stop the agent mid-turn
-├── GET  /api/sessions/:id/events   → SSE stream
-├── GET  /api/sessions/:id/source   → raw app.jsx for code viewer
-└── GET  /api/sessions/:id/preview/* → composed HTML for iframe
+├── POST /api/sessions                    → create session + sandbox dir
+├── POST /api/sessions/resume             → resume a session by SDK session ID
+├── GET  /api/sessions/history            → list previous sessions
+├── GET  /api/sessions/replay/:sdkSessId  → persisted events for UI replay
+├── POST /api/sessions/:id/messages       → send user message
+├── POST /api/sessions/:id/abort          → stop the agent mid-turn
+├── GET  /api/sessions/:id/events         → SSE stream
+├── GET  /api/sessions/:id/source         → raw app.jsx for code viewer
+└── GET  /api/sessions/:id/preview/*      → composed HTML for iframe
 ```
 
 When the agent's Write or Edit tool completes, the server emits a
@@ -120,6 +133,12 @@ constitute a security boundary suitable for untrusted users.
 
 - **Preview path validation** — The `/preview/*` endpoint normalizes the
   requested path and rejects any traversal attempt before serving files.
+
+- **Opt-in persistence** — Session event logging (`--persist` / `pnpm
+  dev:persist`) is disabled by default. When enabled, conversation data —
+  including tool inputs and outputs — is written to `.neeter-data/` as
+  unencrypted JSONL. Do not enable persistence in environments where
+  conversation data may be sensitive.
 
 ### What production use would require
 
