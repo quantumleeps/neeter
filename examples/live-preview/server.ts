@@ -28,6 +28,7 @@ const HTML_TEMPLATE = `<!doctype html>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Preview</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { darkMode: 'media' }</script>
   <script type="importmap">
   {
     "imports": {
@@ -59,10 +60,10 @@ import { createRoot } from 'react-dom/client';
 
 function App() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center p-4">
       <div className="text-center">
-        <h1 className="text-2xl font-semibold text-slate-800 mb-2">Ready</h1>
-        <p className="text-slate-500">Send a message to get started.</p>
+        <h1 className="text-2xl font-semibold text-slate-800 dark:text-slate-100 mb-2">Ready</h1>
+        <p className="text-slate-500 dark:text-slate-400">Send a message to get started.</p>
       </div>
     </div>
   );
