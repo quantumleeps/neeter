@@ -1,4 +1,5 @@
 import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { cn } from "./cn.js";
 import { markdownComponents } from "./markdown-overrides.js";
 
@@ -25,7 +26,9 @@ export function TextMessage({
           <span className="whitespace-pre-wrap">{content}</span>
         ) : (
           <div className="[&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
-            <Markdown components={markdownComponents}>{content}</Markdown>
+            <Markdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+              {content}
+            </Markdown>
           </div>
         )}
       </div>

@@ -1,4 +1,5 @@
 import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { markdownComponents } from "../markdown-overrides.js";
 import { registerWidget } from "../registry.js";
 import type { WidgetProps } from "../types.js";
@@ -80,7 +81,9 @@ function WebFetchWidget({ result, input, phase }: WidgetProps<string>) {
         </a>
       )}
       <div className="text-foreground leading-relaxed [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
-        <Markdown components={markdownComponents}>{result}</Markdown>
+        <Markdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+          {result}
+        </Markdown>
       </div>
     </div>
   );
