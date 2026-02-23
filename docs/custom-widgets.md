@@ -4,38 +4,45 @@
 
 Register your own components for MCP tools or any tool the agent can call. When a tool completes, `ToolCallCard` looks up the matching widget and renders it instead of the default JSON fallback.
 
-https://github.com/user-attachments/assets/0b0d5a9c-27e2-4e8f-9f4a-e3d60f4a01e2
+https://github.com/user-attachments/assets/664cf594-5569-477a-9e08-ba45276a8488
 
 ## End-to-end example
 
-A custom widget has three parts: the MCP server tool, the session config that wires it in, and the React component that renders it.
+A custom widget has three parts: the MCP server tool, the session config that wires it in, and the React component that renders it. This example builds a Pokémon lookup — see [`examples/basic-chat/`](../examples/basic-chat/) for the full working code.
 
 ### 1. Define the MCP tool
 
 ```typescript
-// server/dice-server.ts
+// server/pokemon-server.ts
 import { createSdkMcpServer, tool } from "@anthropic-ai/claude-agent-sdk";
 import { z } from "zod/v4";
 
-export function createDiceServer() {
+export function createPokemonServer() {
   return createSdkMcpServer({
-    name: "dice",
+    name: "pokemon",
     tools: [
       tool(
-        "roll",
-        "Roll dice and return the results",
-        { sides: z.number(), count: z.number() },
-        async ({ sides, count }) => {
-          const rolls = Array.from({ length: count }, () =>
-            Math.ceil(Math.random() * sides)
+        "pokemon_lookup",
+        "Look up a Pokémon by name or Pokédex number",
+        { query: z.string() },
+        async ({ query }) => {
+          const res = await fetch(
+            `https://pokeapi.co/api/v2/pokemon/${encodeURIComponent(query.toLowerCase())}`,
           );
+          const data = await res.json();
           return {
             content: [{
               type: "text" as const,
-              text: JSON.stringify({ rolls, total: rolls.reduce((a, b) => a + b, 0) }),
+              text: JSON.stringify({
+                name: data.name,
+                id: data.id,
+                sprite: data.sprites.front_default,
+                types: data.types.map((t: any) => t.type.name),
+                stats: data.stats.map((s: any) => ({ name: s.stat.name, value: s.base_stat })),
+              }),
             }],
           };
-        }
+        },
       ),
     ],
   });
@@ -46,64 +53,76 @@ export function createDiceServer() {
 
 ```typescript
 // server/index.ts
-import { createDiceServer } from "./dice-server.js";
+import { createPokemonServer } from "./pokemon-server.js";
 
 const sessions = new SessionManager(() => ({
   context: {},
-  model: "claude-sonnet-4-5-20250929",
-  systemPrompt: "You are a helpful assistant that can roll dice.",
-  mcpServers: { dice: createDiceServer() },
-  allowedTools: ["mcp__dice__*"],
+  model: "claude-sonnet-4-20250514",
+  systemPrompt: "You are a helpful assistant that can look up Pokémon.",
+  mcpServers: { pokemon: createPokemonServer() },
+  allowedTools: ["mcp__pokemon__*"],
 }));
 ```
 
-The MCP server name (`"dice"`) becomes the middle segment of the tool's fully-qualified name: `mcp__dice__roll`.
+The MCP server name (`"pokemon"`) becomes the middle segment of the tool's fully-qualified name: `mcp__pokemon__pokemon_lookup`.
 
 ### 3. Register the widget
 
 ```tsx
-// client/widgets/DiceWidget.tsx
+// client/widgets/PokemonLookupWidget.tsx
 import { registerWidget, type WidgetProps } from "@neeter/react";
 
-interface DiceResult {
-  rolls: number[];
-  total: number;
+interface PokemonResult {
+  name: string;
+  id: number;
+  sprite: string;
+  types: string[];
+  stats: { name: string; value: number }[];
 }
 
-function DiceWidget({ result }: WidgetProps<DiceResult>) {
+function PokemonLookupWidget({ result, phase }: WidgetProps<PokemonResult>) {
+  if (phase === "running" || phase === "pending") {
+    return <span className="animate-pulse text-xs">Looking up Pokémon…</span>;
+  }
   if (!result) return null;
   return (
-    <div className="flex items-center gap-3 text-sm">
-      <span className="font-mono">[{result.rolls.join(", ")}]</span>
-      <span className="text-muted-foreground">= {result.total}</span>
+    <div className="flex gap-3 py-2 text-sm">
+      <img src={result.sprite} alt={result.name} width={64} height={64} />
+      <div>
+        <span className="font-semibold capitalize">{result.name}</span>
+        <span className="text-muted-foreground ml-1">#{result.id}</span>
+        <div className="text-xs text-muted-foreground">{result.types.join(" · ")}</div>
+      </div>
     </div>
   );
 }
 
-registerWidget<DiceResult>({
-  toolName: "roll",
-  label: "Dice",
-  richLabel: (r) => `Rolled ${r.total}`,
-  component: DiceWidget,
+registerWidget<PokemonResult>({
+  toolName: "pokemon_lookup",
+  label: "Pokémon",
+  richLabel: (r) => `${r.name.charAt(0).toUpperCase() + r.name.slice(1)} #${r.id}`,
+  component: PokemonLookupWidget,
 });
 ```
+
+The full widget in [`examples/basic-chat/`](../examples/basic-chat/) adds stat bars, type-colored badges, official artwork, abilities, and an `inputRenderer` for approval previews.
 
 ### 4. Import the widget
 
 ```tsx
-// client/App.tsx
-import "./widgets/DiceWidget.js";
+// client/main.tsx
+import "./widgets/PokemonLookupWidget.js";
 ```
 
 Add a side-effect import in your app's entry point. This ensures `registerWidget` runs at module load time, before any tool calls render.
 
 ## How it works
 
-**Tool name matching** — `toolName` in your registration matches the *short* name of the tool, not the fully-qualified MCP name. neeter strips the `mcp__server__` prefix automatically, so `mcp__dice__roll` matches `toolName: "roll"`.
+**Tool name matching** — `toolName` in your registration matches the *short* name of the tool, not the fully-qualified MCP name. neeter strips the `mcp__server__` prefix automatically, so `mcp__pokemon__pokemon_lookup` matches `toolName: "pokemon_lookup"`.
 
 **Result parsing** — MCP tools return results as `content: [{ type: "text", text: "..." }]`. neeter parses the JSON string for you — your widget receives the parsed object directly as `result`.
 
-**Registration timing** — `registerWidget` must run before React renders any tool calls. Side-effect imports (`import "./widgets/DiceWidget.js"`) at the top of your entry point guarantee this. If you have multiple widgets, barrel-import a `widgets/` directory.
+**Registration timing** — `registerWidget` must run before React renders any tool calls. Side-effect imports (`import "./widgets/PokemonLookupWidget.js"`) at the top of your entry point guarantee this. If you have multiple widgets, barrel-import a `widgets/` directory.
 
 ## Rich labels
 
@@ -202,6 +221,16 @@ Look up a registered widget. Returns `WidgetRegistration | undefined`.
 ### `stripMcpPrefix(name)`
 
 `"mcp__server__tool"` → `"tool"`. Used internally to normalize tool names before widget lookup.
+
+## Scaffolding with Claude Code
+
+neeter ships an `add-widget` [Claude Code skill](https://code.claude.com/docs/en/skills) in `.claude/skills/`. Invoke it to scaffold the full stack — MCP server, session wiring, and widget — in one shot:
+
+```
+/add-widget pokemon_lookup
+```
+
+The skill detects whether the tool name matches a built-in (replacement mode) or is custom (creation mode), then walks through each step. The Pokémon example in these docs was built this way.
 
 ---
 
