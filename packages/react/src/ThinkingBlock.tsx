@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
 import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { cn } from "./cn.js";
 import { ChevronIcon } from "./icons.js";
 import { markdownComponents } from "./markdown-overrides.js";
@@ -67,7 +68,9 @@ export function ThinkingBlock({
 function ThinkingContent({ children }: { children: string }) {
   return (
     <div className="text-xs text-muted-foreground/70 italic [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
-      <Markdown components={markdownComponents}>{children}</Markdown>
+      <Markdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+        {children}
+      </Markdown>
     </div>
   );
 }
