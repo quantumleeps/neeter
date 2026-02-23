@@ -9,7 +9,6 @@ const sessions = new SessionManager(() => ({
   context: {},
   model: "claude-sonnet-4-20250514",
   systemPrompt: "You are a helpful assistant.",
-  permissionMode: "bypassPermissions",
 }));
 
 const translator = new MessageTranslator();

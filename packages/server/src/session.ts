@@ -36,7 +36,7 @@ export interface SessionInit<TCtx> {
   maxTurns?: number;
   /** Working directory for file-based tools. */
   cwd?: string;
-  /** Controls browser-side tool approval. Defaults to `"bypassPermissions"`. */
+  /** Controls browser-side tool approval. Defaults to `"default"`. */
   permissionMode?: "default" | "acceptEdits" | "plan" | "bypassPermissions";
   /** Enable extended thinking (chain-of-thought). Off by default. */
   thinking?: { type: "enabled"; budgetTokens: number } | { type: "disabled" };
@@ -180,7 +180,7 @@ export class SessionManager<TCtx> {
     const abortController = new AbortController();
     const permissionGate = new PermissionGate();
 
-    const permissionMode = init.permissionMode ?? "bypassPermissions";
+    const permissionMode = init.permissionMode ?? "default";
     const isBypass = permissionMode === "bypassPermissions";
 
     const canUseTool = isBypass
