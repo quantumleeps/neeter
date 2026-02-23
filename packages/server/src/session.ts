@@ -42,6 +42,10 @@ export interface SessionInit<TCtx> {
   thinking?: { type: "enabled"; budgetTokens: number } | { type: "disabled" };
   /** SDK lifecycle hooks (e.g. `PreToolUse` for sandbox enforcement via `createSandboxHook`). */
   hooks?: Partial<Record<HookEvent, HookCallbackMatcher[]>>;
+  /** Extra CLI flags forwarded to the Claude Code subprocess. */
+  extraArgs?: Record<string, string | null>;
+  /** Environment variables forwarded to the Claude Code subprocess. */
+  env?: Record<string, string | undefined>;
 }
 
 export interface ResumeOptions {
@@ -242,6 +246,8 @@ export class SessionManager<TCtx> {
         ...(init.cwd ? { cwd: init.cwd } : {}),
         ...(init.disallowedTools ? { disallowedTools: init.disallowedTools } : {}),
         ...(init.hooks ? { hooks: init.hooks } : {}),
+        ...(init.extraArgs ? { extraArgs: init.extraArgs } : {}),
+        ...(init.env ? { env: init.env } : {}),
         ...extraQueryOptions,
       },
     });

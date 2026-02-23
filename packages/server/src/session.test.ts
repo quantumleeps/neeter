@@ -86,6 +86,40 @@ describe("SessionManager.resume", () => {
   });
 });
 
+describe("SessionInit passthrough", () => {
+  it("forwards extraArgs to query options", () => {
+    const mgr = new SessionManager<{ n: number }>(() => ({
+      context: { n: 1 },
+      model: "test",
+      systemPrompt: "test",
+      extraArgs: { "replay-user-messages": null },
+    }));
+    mgr.create();
+
+    expect(lastQueryOptions?.extraArgs).toEqual({ "replay-user-messages": null });
+  });
+
+  it("forwards env to query options", () => {
+    const mgr = new SessionManager<{ n: number }>(() => ({
+      context: { n: 1 },
+      model: "test",
+      systemPrompt: "test",
+      env: { CLAUDE_CODE_ENABLE_SDK_FILE_CHECKPOINTING: "1" },
+    }));
+    mgr.create();
+
+    expect(lastQueryOptions?.env).toEqual({ CLAUDE_CODE_ENABLE_SDK_FILE_CHECKPOINTING: "1" });
+  });
+
+  it("omits extraArgs and env when not provided", () => {
+    const mgr = createManager();
+    mgr.create();
+
+    expect(lastQueryOptions).not.toHaveProperty("extraArgs");
+    expect(lastQueryOptions).not.toHaveProperty("env");
+  });
+});
+
 describe("SessionManager.listHistory", () => {
   it("returns empty when no sessions exist", async () => {
     const mgr = createManager();

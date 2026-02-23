@@ -11,7 +11,7 @@ For usage examples, see the [Server Guide](server.md) and [Client Guide](client.
 | `SessionManager<TCtx>` | Manages agent sessions — create, resume, list history, optional persistence |
 | `SessionManagerOptions` | Constructor options — `idleTimeoutMs`, `store` |
 | `Session<TCtx>` | A single session — `id`, `sdkSessionId`, `context`, `pushMessage()`, `permissionGate`, `abort()` |
-| `SessionInit<TCtx>` | Factory return type — `model`, `systemPrompt`, `permissionMode`, `mcpServers`, etc. |
+| `SessionInit<TCtx>` | Factory return type — `model`, `systemPrompt`, `permissionMode`, `mcpServers`, `extraArgs`, `env`, etc. |
 | `ResumeOptions` | Options for `SessionManager.resume()` — `sdkSessionId`, `forkSession` |
 | `sessionMeta(session)` | Extract a `SessionHistoryEntry` from a `Session` |
 | `createJsonSessionStore(dataDir)` | File-based `SessionStore` using append-only JSONL + JSON metadata |
