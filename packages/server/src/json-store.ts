@@ -14,6 +14,11 @@ function sanitize(sdkSessionId: string): string {
   return sdkSessionId.replace(/[^a-zA-Z0-9_-]/g, "_");
 }
 
+/**
+ * File-based `SessionStore` using append-only JSONL event logs and JSON metadata sidecars.
+ * Creates `{dataDir}/sessions/` on first call. Data is written unencrypted —
+ * use for development and trusted environments only.
+ */
 export function createJsonSessionStore(dataDir: string): SessionStore {
   const sessionsDir = join(dataDir, "sessions");
   mkdirSync(sessionsDir, { recursive: true });

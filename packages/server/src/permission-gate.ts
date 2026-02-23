@@ -7,6 +7,11 @@ interface PendingRequest {
 
 type RequestListener = (request: PermissionRequest) => void;
 
+/**
+ * Deferred-promise map for browser-side tool approval and user questions.
+ * `request()` returns a Promise that blocks the SDK until the user responds
+ * via `respond()`. `cancelAll()` denies all pending requests (used on abort).
+ */
 export class PermissionGate {
   private pending = new Map<string, PendingRequest>();
   private listeners = new Set<RequestListener>();

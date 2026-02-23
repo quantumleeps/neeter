@@ -16,9 +16,14 @@ const PERSISTED_EVENTS = new Set([
   "custom",
 ]);
 
+/**
+ * Returns a Hono app with eight routes for session management, SSE streaming,
+ * permissions, and abort. Mounts under `basePath` (default: `"/api"`).
+ */
 export function createAgentRouter<TCtx>(config: {
   sessions: SessionManager<TCtx>;
   translator: MessageTranslator<TCtx>;
+  /** URL prefix for all routes. Defaults to `"/api"`. */
   basePath?: string;
 }): Hono {
   const { sessions, translator, basePath = "/api" } = config;

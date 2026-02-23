@@ -19,7 +19,7 @@ pnpm add @neeter/types
 
 ## Documentation
 
-See the [neeter README](https://github.com/quantumleeps/neeter#readme) for full API reference and usage guides.
+See the [API Reference](https://github.com/quantumleeps/neeter/blob/main/docs/api-reference.md) for all type definitions and the [neeter README](https://github.com/quantumleeps/neeter#readme) for usage guides.
 
 ## License
 

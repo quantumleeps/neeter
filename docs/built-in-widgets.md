@@ -1,6 +1,12 @@
 # Built-in Widgets
 
+> Part of [neeter](../README.md). See [all docs](../README.md#documentation).
+
 neeter ships widgets for 11 Claude Agent SDK tools. They auto-register when you import from `@neeter/react` — just add tools to your `SessionManager` and the UI handles the rest.
+
+<p>
+  <img src="assets/websearch.png" alt="WebSearch widget with favicon source pills" width="600" />
+</p>
 
 ## What you get
 
@@ -27,6 +33,10 @@ The collapsed card header shows a **rich label** — the filename for file tools
 
 The **Edit** widget is the most visually distinct — it shows a line-by-line diff with red/green highlighting so you can see exactly what's changing before approving.
 
+<p>
+  <img src="assets/edit-diff.png" alt="Edit widget: line-by-line diff with approval controls" width="600" />
+</p>
+
 **NotebookEdit** uses insert-aware cell labels: for insert operations, the cell reference shows "after cell-2" rather than just "cell-2" since the cell ID is the anchor point.
 
 ### Command execution
@@ -35,12 +45,20 @@ The **Edit** widget is the most visually distinct — it shows a line-by-line di
 |------|-----------------|------------------|-----------------|
 | **Bash** | Description + command block | `$ command` + output | Description or truncated command |
 
+<p>
+  <img src="assets/bash-widget.png" alt="Bash widget: command + output with green status dot" width="600" />
+</p>
+
 ### Web
 
 | Tool | Approval preview | Completed result | Collapsed label |
 |------|-----------------|------------------|-----------------|
 | **WebFetch** | Favicon pill + domain, prompt | Pill + markdown-rendered content | Domain name |
 | **WebSearch** | Search query | Expandable grid of favicon + domain pills | `"query" · N sources` |
+
+<p>
+  <img src="assets/webfetch-widget.png" alt="WebFetch widget: favicon pill with markdown-rendered page content" width="600" />
+</p>
 
 ### Agent interaction
 
@@ -50,6 +68,10 @@ The **Edit** widget is the most visually distinct — it shows a line-by-line di
 | **TodoWrite** | Checklist with status icons | `X/Y done` |
 
 These two don't show approval previews since they don't go through the `canUseTool` flow.
+
+<p>
+  <img src="assets/todowrite-widget.png" alt="TodoWrite checklist with status icons and progress tracking" width="600" />
+</p>
 
 ## Tools without widgets
 
@@ -98,3 +120,7 @@ Source files: [`packages/react/src/widgets/*Widget.tsx`](../packages/react/src/w
 ## Next steps
 
 To register widgets for your own MCP tools or app-specific rendering, see [Custom Widgets](custom-widgets.md).
+
+---
+
+See also: [Client Guide](client.md) | [API Reference](api-reference.md)

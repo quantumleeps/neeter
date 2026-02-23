@@ -45,30 +45,6 @@ app.route("/", createAgentRouter({ sessions, translator }));
 serve({ fetch: app.fetch, port: 3000 });
 ```
 
-This gives you eight endpoints:
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/api/sessions` | Create a session |
-| `POST` | `/api/sessions/resume` | Resume or fork a session by SDK session ID |
-| `GET` | `/api/sessions/history` | List previous sessions |
-| `GET` | `/api/sessions/replay/:sdkSessionId` | Load persisted events for UI replay |
-| `POST` | `/api/sessions/:id/messages` | Send a message |
-| `GET` | `/api/sessions/:id/events` | SSE event stream |
-| `POST` | `/api/sessions/:id/permissions` | Respond to a permission request |
-| `POST` | `/api/sessions/:id/abort` | Abort the current turn |
-
-## Key features
-
-- **Multi-turn sessions** — `SessionManager` + `PushChannel` let users send messages at any time, even while the agent is running.
-- **Named SSE events** — `MessageTranslator` reshapes the SDK's flat message stream into `text_delta`, `tool_start`, `tool_call`, `tool_result`, and more.
-- **Tool result hooks** — `onToolResult` lets you inspect what the agent did and emit structured custom events.
-- **Permission modes** — `bypassPermissions`, `default`, `acceptEdits`, or `plan` — with browser-side approval via `PermissionGate`.
-- **Extended thinking** — Pass `thinking: { type: "enabled", budgetTokens: N }` to stream chain-of-thought reasoning.
-- **Session resume & persistence** — Resume past conversations with `SessionManager.resume()`. Opt into persistence with `createJsonSessionStore` for history and event replay that survive server restarts.
-- **Abort** — Cancel the current agent turn mid-stream.
-- **Sandbox hooks** — `createSandboxHook` restricts file operations to a directory.
-
 ## Examples
 
 | Example | Description |
@@ -78,7 +54,8 @@ This gives you eight endpoints:
 
 ## Documentation
 
-See the [neeter README](https://github.com/quantumleeps/neeter#readme) for full API reference, session context examples, and permission configuration.
+- [Server Guide](https://github.com/quantumleeps/neeter/blob/main/docs/server.md) — endpoints, permissions, persistence, session context, sandbox hooks
+- [API Reference](https://github.com/quantumleeps/neeter/blob/main/docs/api-reference.md) — all exports and types
 
 ## License
 

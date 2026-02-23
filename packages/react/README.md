@@ -64,17 +64,6 @@ Without shadcn, import the bundled theme:
 @import "@neeter/react/theme.css";
 ```
 
-## Key features
-
-- **11 built-in widgets** — Diff views for edits, code blocks for reads, expandable pills for web searches, and more. Auto-registered on import.
-- **Custom widgets** — Register your own components for MCP tools or app-specific rendering with `registerWidget()`.
-- **Tool call lifecycle** — Each tool moves through `pending` → `streaming_input` → `running` → `complete` with streaming JSON input.
-- **Permissions UI** — `ToolApprovalCard` and `UserQuestionCard` for browser-side tool approval.
-- **Extended thinking** — Collapsible thinking blocks with streaming text.
-- **Session resume** — Resume past sessions with `resumeSession()`, start fresh with `newSession()`, and browse history with `refreshHistory()`. `replayEvents` reconstructs the chat UI from persisted events.
-- **Custom events** — Handle app-specific events from `onToolResult` via `AgentProvider`'s `onCustomEvent` prop.
-- **Abort** — Stop the agent mid-turn with `stopSession()` from `useAgentContext()`.
-
 ## Examples
 
 | Example | Description |
@@ -84,9 +73,10 @@ Without shadcn, import the bundled theme:
 
 ## Documentation
 
-- [Full API reference](https://github.com/quantumleeps/neeter#readme)
-- [Built-in widgets](https://github.com/quantumleeps/neeter/blob/main/docs/built-in-widgets.md)
-- [Custom widgets](https://github.com/quantumleeps/neeter/blob/main/docs/custom-widgets.md)
+- [Client Guide](https://github.com/quantumleeps/neeter/blob/main/docs/client.md) — styling, custom events, widgets, tool lifecycle
+- [API Reference](https://github.com/quantumleeps/neeter/blob/main/docs/api-reference.md) — all exports and types
+- [Built-in Widgets](https://github.com/quantumleeps/neeter/blob/main/docs/built-in-widgets.md)
+- [Custom Widgets](https://github.com/quantumleeps/neeter/blob/main/docs/custom-widgets.md)
 
 ## License
 

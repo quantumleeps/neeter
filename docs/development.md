@@ -1,5 +1,7 @@
 # Development
 
+> Part of [neeter](../README.md). See [all docs](../README.md#documentation).
+
 ## Setup
 
 ```bash
@@ -42,3 +44,7 @@ If gitleaks isn't installed, the hook skips gracefully — all other hooks still
 Pull requests to `main` run lint, build, and test via GitHub Actions. See `.github/workflows/ci.yml`.
 
 [Dependabot](https://docs.github.com/en/code-security/dependabot) opens weekly PRs for npm and GitHub Actions dependency updates.
+
+---
+
+See also: [Server Guide](server.md) | [Client Guide](client.md)

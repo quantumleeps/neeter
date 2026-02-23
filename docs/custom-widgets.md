@@ -1,5 +1,7 @@
 # Custom Widgets
 
+> Part of [neeter](../README.md). See [all docs](../README.md#documentation).
+
 Register your own components for MCP tools or any tool the agent can call. When a tool completes, `ToolCallCard` looks up the matching widget and renders it instead of the default JSON fallback.
 
 https://github.com/user-attachments/assets/0b0d5a9c-27e2-4e8f-9f4a-e3d60f4a01e2
@@ -200,3 +202,7 @@ Look up a registered widget. Returns `WidgetRegistration | undefined`.
 ### `stripMcpPrefix(name)`
 
 `"mcp__server__tool"` → `"tool"`. Used internally to normalize tool names before widget lookup.
+
+---
+
+See also: [Built-in Widgets](built-in-widgets.md) | [Client Guide](client.md) | [API Reference](api-reference.md)

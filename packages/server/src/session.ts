@@ -19,18 +19,28 @@ function userMessage(content: string): SDKUserMessage {
   };
 }
 
+/** Configuration returned by the `SessionManager` factory for each new session. */
 export interface SessionInit<TCtx> {
+  /** Per-session application state, accessible in translator hooks. */
   context: TCtx;
+  /** Claude model ID (e.g. `"claude-sonnet-4-5-20250929"`). */
   model: string;
   systemPrompt: string;
+  /** MCP servers keyed by name — the name becomes the middle segment of tool names (`mcp__{name}__{tool}`). */
   mcpServers?: Record<string, unknown>;
   tools?: unknown[];
+  /** Glob patterns for allowed tools (e.g. `["mcp__myServer__*"]`). */
   allowedTools?: string[];
   disallowedTools?: string[];
+  /** Maximum SDK turns before the session stops. Defaults to 200. */
   maxTurns?: number;
+  /** Working directory for file-based tools. */
   cwd?: string;
+  /** Controls browser-side tool approval. Defaults to `"bypassPermissions"`. */
   permissionMode?: "default" | "acceptEdits" | "plan" | "bypassPermissions";
+  /** Enable extended thinking (chain-of-thought). Off by default. */
   thinking?: { type: "enabled"; budgetTokens: number } | { type: "disabled" };
+  /** SDK lifecycle hooks (e.g. `PreToolUse` for sandbox enforcement via `createSandboxHook`). */
   hooks?: Partial<Record<HookEvent, HookCallbackMatcher[]>>;
 }
 
@@ -69,6 +79,14 @@ export interface SessionManagerOptions {
   store?: SessionStore;
 }
 
+/**
+ * Manages agent sessions — create, resume, look up, and clean up.
+ *
+ * The `factory` callback runs once per session and returns a `SessionInit`.
+ * When resuming, the original session is passed so you can carry context forward.
+ *
+ * Pass `options.store` to persist session history and event logs across restarts.
+ */
 export class SessionManager<TCtx> {
   private sessions = new Map<string, Session<TCtx>>();
   private factory: (original?: Session<TCtx>) => SessionInit<TCtx>;

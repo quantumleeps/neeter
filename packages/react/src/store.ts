@@ -54,6 +54,10 @@ function findToolCall(messages: ChatMessage[], toolUseId: string): ToolCallInfo 
   return undefined;
 }
 
+/**
+ * Creates a vanilla Zustand store for chat state. `AgentProvider` creates one
+ * internally — use this directly only for custom provider implementations.
+ */
 export function createChatStore(): ChatStore {
   return createStore<ChatStoreShape>()(
     immer((set) => ({
@@ -251,6 +255,11 @@ export function createChatStore(): ChatStore {
   );
 }
 
+/**
+ * Reconstructs chat store state from persisted SSE events. Uses the same
+ * store actions as the live SSE stream, so rendering is identical.
+ * Call before connecting the EventSource (e.g. during session resume).
+ */
 export function replayEvents(store: ChatStore, events: SSEEvent[]): void {
   const s = store.getState();
   for (const evt of events) {

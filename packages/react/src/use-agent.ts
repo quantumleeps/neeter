@@ -26,6 +26,11 @@ export interface UseAgentReturn {
   refreshHistory: () => Promise<void>;
 }
 
+/**
+ * Low-level hook that manages the EventSource lifecycle and feeds SSE events
+ * into the Zustand store. Most apps should use `AgentProvider` instead —
+ * this hook is for custom provider implementations.
+ */
 export function useAgent(store: ChatStore, config?: UseAgentConfig): UseAgentReturn {
   const endpoint = config?.endpoint ?? "/api";
   const resumeSessionId = config?.resumeSessionId;

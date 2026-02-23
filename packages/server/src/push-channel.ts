@@ -1,3 +1,8 @@
+/**
+ * Unbounded async iterable queue. Push values with `push()`, close with `close()`.
+ * Consumers `for await` over the channel; they block until a value is available
+ * or the channel is closed.
+ */
 export class PushChannel<T> implements AsyncIterable<T> {
   private queue: T[] = [];
   private resolve: ((value: IteratorResult<T>) => void) | null = null;

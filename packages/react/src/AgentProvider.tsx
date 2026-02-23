@@ -10,9 +10,16 @@ interface AgentContextValue extends UseAgentReturn {
 
 const AgentContext = createContext<AgentContextValue | null>(null);
 
+/**
+ * Context provider that creates a Zustand store and wires up the SSE connection.
+ * Wrap your chat UI with this — children access the store via `useAgentContext()`.
+ */
 export function AgentProvider(props: {
+  /** Base URL for the neeter server routes. Defaults to `"/api"`. */
   endpoint?: string;
+  /** SDK session ID to resume on mount. Replays persisted events then reconnects. */
   resumeSessionId?: string;
+  /** Handler for custom events emitted by `onToolResult` on the server. */
   onCustomEvent?: (event: CustomEvent) => void;
   children: ReactNode;
 }) {

@@ -3,9 +3,11 @@ import { PushChannel } from "./push-channel.js";
 import type { Session } from "./session.js";
 
 export interface TranslatorConfig<TCtx> {
+  /** Inspect completed tool results and optionally return custom events to send to the client. */
   onToolResult?: (toolName: string, result: string, session: Session<TCtx>) => CustomEvent[];
 }
 
+/** Converts raw Claude Agent SDK messages into semantically named SSE events. */
 export class MessageTranslator<TCtx> {
   private config: TranslatorConfig<TCtx>;
   private toolNames = new Map<string, string>();
@@ -223,10 +225,16 @@ export class MessageTranslator<TCtx> {
   }
 }
 
+/** Formats an SSEEvent as an `event: ...\ndata: ...\n\n` string for the wire. */
 export function sseEncode(evt: SSEEvent): string {
   return `event: ${evt.event}\ndata: ${evt.data}\n\n`;
 }
 
+/**
+ * Drives the SDK message loop and yields translated SSE events.
+ * The optional `onEvent` callback fires for each event — use it
+ * to persist events to a `SessionStore`.
+ */
 export async function* streamSession<TCtx>(
   session: Session<TCtx>,
   translator: MessageTranslator<TCtx>,
