@@ -4,8 +4,7 @@
 
 Register your own components for MCP tools or any tool the agent can call. When a tool completes, `ToolCallCard` looks up the matching widget and renders it instead of the default JSON fallback.
 
-<!-- TODO: re-record with pokemon example -->
-https://github.com/user-attachments/assets/0b0d5a9c-27e2-4e8f-9f4a-e3d60f4a01e2
+https://github.com/user-attachments/assets/664cf594-5569-477a-9e08-ba45276a8488
 
 ## End-to-end example
 
