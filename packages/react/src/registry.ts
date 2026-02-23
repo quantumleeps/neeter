@@ -16,5 +16,5 @@ export function getWidget(toolName: string): WidgetRegistration | undefined {
 }
 
 export function stripMcpPrefix(name: string): string {
-  return name.replace(/^mcp__[^_]+__/, "");
+  return name.replace(/^mcp__.+?__/, "");
 }

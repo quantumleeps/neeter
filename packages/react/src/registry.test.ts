@@ -28,4 +28,12 @@ describe("stripMcpPrefix", () => {
   it("handles multiple underscores in tool name", () => {
     expect(stripMcpPrefix("mcp__srv__my_long_tool_name")).toBe("my_long_tool_name");
   });
+
+  it("handles underscores in server name", () => {
+    expect(stripMcpPrefix("mcp__my_server__read_file")).toBe("read_file");
+  });
+
+  it("handles multiple underscores in server name", () => {
+    expect(stripMcpPrefix("mcp__a_b_c__tool")).toBe("tool");
+  });
 });

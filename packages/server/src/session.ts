@@ -1,6 +1,7 @@
 import {
   type HookCallbackMatcher,
   type HookEvent,
+  type McpServerConfig,
   query,
   type SDKUserMessage,
 } from "@anthropic-ai/claude-agent-sdk";
@@ -27,8 +28,8 @@ export interface SessionInit<TCtx> {
   model: string;
   systemPrompt: string;
   /** MCP servers keyed by name — the name becomes the middle segment of tool names (`mcp__{name}__{tool}`). */
-  mcpServers?: Record<string, unknown>;
-  tools?: unknown[];
+  mcpServers?: Record<string, McpServerConfig>;
+  tools?: string[] | { type: "preset"; preset: "claude_code" };
   /** Glob patterns for allowed tools (e.g. `["mcp__myServer__*"]`). */
   allowedTools?: string[];
   disallowedTools?: string[];
@@ -233,8 +234,8 @@ export class SessionManager<TCtx> {
       options: {
         systemPrompt: init.systemPrompt,
         model: init.model,
-        tools: (init.tools as never[]) ?? [],
-        mcpServers: init.mcpServers as never,
+        tools: init.tools ?? [],
+        mcpServers: init.mcpServers,
         allowedTools: init.allowedTools,
         maxTurns: init.maxTurns ?? 200,
         permissionMode,
