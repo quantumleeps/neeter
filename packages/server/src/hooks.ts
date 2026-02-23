@@ -1,7 +1,7 @@
 import type {
   HookCallbackMatcher,
-  HookInput,
   HookJSONOutput,
+  PreToolUseHookInput,
 } from "@anthropic-ai/claude-agent-sdk";
 
 export interface SandboxHookOptions {
@@ -48,26 +48,35 @@ export function createSandboxHook(
   return [
     {
       hooks: [
-        async (input: HookInput): Promise<HookJSONOutput> => {
+        async (input): Promise<HookJSONOutput> => {
           if (input.hook_event_name !== "PreToolUse") return {};
 
-          const toolName = (input as Record<string, unknown>).tool_name as string | undefined;
-          if (toolName === "Bash" && !allowBash) {
+          const preInput = input as PreToolUseHookInput;
+          if (preInput.tool_name === "Bash" && !allowBash) {
             return {
-              decision: "block",
-              reason:
-                "Bash is blocked in sandbox mode — shell commands can reference arbitrary paths. " +
-                "Use allowBash with OS-level isolation (containers, sandbox-runtime) for Bash access. " +
-                "See https://platform.claude.com/docs/en/agent-sdk/secure-deployment",
+              hookSpecificOutput: {
+                hookEventName: input.hook_event_name,
+                permissionDecision: "deny",
+                permissionDecisionReason:
+                  "Bash is blocked in sandbox mode — shell commands can reference arbitrary paths. " +
+                  "Use allowBash with OS-level isolation (containers, sandbox-runtime) for Bash access. " +
+                  "See https://platform.claude.com/docs/en/agent-sdk/secure-deployment",
+              },
             };
           }
 
-          const toolInput = input.tool_input as Record<string, unknown>;
+          const toolInput = preInput.tool_input as Record<string, unknown>;
           const filePath = (toolInput.file_path ?? toolInput.path) as string | undefined;
           if (!filePath) return {};
           const resolved = resolvePath(filePath);
           if (resolved !== normalizedDir && !resolved.startsWith(`${normalizedDir}/`)) {
-            return { decision: "block", reason: "Access outside sandbox directory is not allowed" };
+            return {
+              hookSpecificOutput: {
+                hookEventName: input.hook_event_name,
+                permissionDecision: "deny",
+                permissionDecisionReason: "Access outside sandbox directory is not allowed",
+              },
+            };
           }
           return {};
         },

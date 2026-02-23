@@ -41,8 +41,11 @@ describe("createSandboxHook", () => {
       signal: AbortSignal.timeout(5000),
     });
     expect(result).toEqual({
-      decision: "block",
-      reason: "Access outside sandbox directory is not allowed",
+      hookSpecificOutput: {
+        hookEventName: "PreToolUse",
+        permissionDecision: "deny",
+        permissionDecisionReason: "Access outside sandbox directory is not allowed",
+      },
     });
   });
 
@@ -53,8 +56,11 @@ describe("createSandboxHook", () => {
       { signal: AbortSignal.timeout(5000) },
     );
     expect(result).toEqual({
-      decision: "block",
-      reason: "Access outside sandbox directory is not allowed",
+      hookSpecificOutput: {
+        hookEventName: "PreToolUse",
+        permissionDecision: "deny",
+        permissionDecisionReason: "Access outside sandbox directory is not allowed",
+      },
     });
   });
 
@@ -65,8 +71,11 @@ describe("createSandboxHook", () => {
       { signal: AbortSignal.timeout(5000) },
     );
     expect(result).toEqual({
-      decision: "block",
-      reason: "Access outside sandbox directory is not allowed",
+      hookSpecificOutput: {
+        hookEventName: "PreToolUse",
+        permissionDecision: "deny",
+        permissionDecisionReason: "Access outside sandbox directory is not allowed",
+      },
     });
   });
 
@@ -84,8 +93,11 @@ describe("createSandboxHook", () => {
       { signal: AbortSignal.timeout(5000) },
     );
     expect(result).toEqual({
-      decision: "block",
-      reason: "Access outside sandbox directory is not allowed",
+      hookSpecificOutput: {
+        hookEventName: "PreToolUse",
+        permissionDecision: "deny",
+        permissionDecisionReason: "Access outside sandbox directory is not allowed",
+      },
     });
   });
 
@@ -114,8 +126,11 @@ describe("createSandboxHook", () => {
     const resolved = resolve("index.html");
     if (!resolved.startsWith(sandboxDir)) {
       expect(result).toEqual({
-        decision: "block",
-        reason: "Access outside sandbox directory is not allowed",
+        hookSpecificOutput: {
+          hookEventName: "PreToolUse",
+          permissionDecision: "deny",
+          permissionDecisionReason: "Access outside sandbox directory is not allowed",
+        },
       });
     }
   });
@@ -125,8 +140,11 @@ describe("createSandboxHook", () => {
       signal: AbortSignal.timeout(5000),
     });
     expect(result).toEqual({
-      decision: "block",
-      reason: expect.stringContaining("Bash is blocked in sandbox mode"),
+      hookSpecificOutput: {
+        hookEventName: "PreToolUse",
+        permissionDecision: "deny",
+        permissionDecisionReason: expect.stringContaining("Bash is blocked in sandbox mode"),
+      },
     });
   });
 
