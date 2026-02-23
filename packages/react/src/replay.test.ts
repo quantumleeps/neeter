@@ -99,6 +99,35 @@ describe("replayEvents", () => {
     expect(messages[1]).toMatchObject({ role: "system", content: "Session ended: error" });
   });
 
+  it("replays an errored tool result", () => {
+    const store = createChatStore();
+    replayEvents(store, [
+      { event: "user_message", data: JSON.stringify({ text: "Write to /etc" }) },
+      { event: "tool_start", data: JSON.stringify({ id: "tu-e", name: "Write" }) },
+      {
+        event: "tool_call",
+        data: JSON.stringify({ id: "tu-e", name: "Write", input: { file_path: "/etc/passwd" } }),
+      },
+      {
+        event: "tool_result",
+        data: JSON.stringify({
+          toolUseId: "tu-e",
+          result: "Access outside sandbox directory is not allowed",
+          isError: true,
+        }),
+      },
+      { event: "turn_complete", data: JSON.stringify({ cost: 0.01, numTurns: 1 }) },
+    ]);
+
+    const { messages } = store.getState();
+    expect(messages[1].toolCalls?.[0]).toMatchObject({
+      id: "tu-e",
+      name: "Write",
+      status: "error",
+      error: "Access outside sandbox directory is not allowed",
+    });
+  });
+
   it("handles empty events array", () => {
     const store = createChatStore();
     replayEvents(store, []);

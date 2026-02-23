@@ -121,8 +121,12 @@ export function useAgent(store: ChatStore, config?: UseAgentConfig): UseAgentRet
     });
 
     es.addEventListener("tool_result", (e) => {
-      const { toolUseId, result } = JSON.parse(e.data);
-      store.getState().completeToolCall(toolUseId, result);
+      const { toolUseId, result, isError } = JSON.parse(e.data);
+      if (isError) {
+        store.getState().errorToolCall(toolUseId, result);
+      } else {
+        store.getState().completeToolCall(toolUseId, result);
+      }
       if (store.getState().isStreaming) {
         store.getState().setThinking(true);
       }

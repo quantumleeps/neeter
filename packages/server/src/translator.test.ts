@@ -125,7 +125,48 @@ describe("MessageTranslator", () => {
       session,
     );
     expect(events).toEqual([
-      { event: "tool_result", data: JSON.stringify({ toolUseId: "t-2", result: "42" }) },
+      {
+        event: "tool_result",
+        data: JSON.stringify({ toolUseId: "t-2", result: "42", isError: false }),
+      },
+    ]);
+  });
+
+  it("emits tool_result with isError true when is_error is set", () => {
+    const t = new MessageTranslator();
+    t.translate(
+      {
+        type: "assistant",
+        message: { content: [{ type: "tool_use", id: "t-err", name: "Write", input: {} }] },
+      },
+      session,
+    );
+    const events = t.translate(
+      {
+        type: "user",
+        message: {
+          role: "user",
+          content: [
+            {
+              type: "tool_result",
+              tool_use_id: "t-err",
+              is_error: true,
+              content: "Access outside sandbox directory is not allowed",
+            },
+          ],
+        },
+      },
+      session,
+    );
+    expect(events).toEqual([
+      {
+        event: "tool_result",
+        data: JSON.stringify({
+          toolUseId: "t-err",
+          result: "Access outside sandbox directory is not allowed",
+          isError: true,
+        }),
+      },
     ]);
   });
 
@@ -154,7 +195,7 @@ describe("MessageTranslator", () => {
     expect(events).toHaveLength(2);
     expect(events[0]).toEqual({
       event: "tool_result",
-      data: JSON.stringify({ toolUseId: "t-3", result: "ok" }),
+      data: JSON.stringify({ toolUseId: "t-3", result: "ok", isError: false }),
     });
     expect(events[1]).toEqual({
       event: "custom",
