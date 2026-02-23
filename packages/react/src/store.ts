@@ -1,4 +1,10 @@
-import type { ChatMessage, PermissionRequest, SSEEvent, ToolCallInfo } from "@neeter/types";
+import type {
+  ChatMessage,
+  McpServerStatus,
+  PermissionRequest,
+  SSEEvent,
+  ToolCallInfo,
+} from "@neeter/types";
 import { immer } from "zustand/middleware/immer";
 import { createStore, type StoreApi } from "zustand/vanilla";
 
@@ -11,6 +17,7 @@ interface ChatStoreState {
   streamingText: string;
   streamingThinking: string;
   pendingPermissions: PermissionRequest[];
+  mcpServers: McpServerStatus[];
   totalCost: number;
   totalTurns: number;
 }
@@ -33,6 +40,7 @@ interface ChatStoreActions {
   setThinking: (v: boolean) => void;
   addPermissionRequest: (request: PermissionRequest) => void;
   removePermissionRequest: (requestId: string) => void;
+  setMcpServers: (servers: McpServerStatus[]) => void;
   addCost: (cost: number, turns: number) => void;
   cancelInflightToolCalls: () => void;
   reset: () => void;
@@ -69,6 +77,7 @@ export function createChatStore(): ChatStore {
       streamingText: "",
       streamingThinking: "",
       pendingPermissions: [],
+      mcpServers: [],
       totalCost: 0,
       totalTurns: 0,
 
@@ -214,6 +223,11 @@ export function createChatStore(): ChatStore {
           s.pendingPermissions = s.pendingPermissions.filter((p) => p.requestId !== requestId);
         }),
 
+      setMcpServers: (servers) =>
+        set((s) => {
+          s.mcpServers = servers;
+        }),
+
       addCost: (cost, turns) =>
         set((s) => {
           s.totalCost += cost;
@@ -248,6 +262,7 @@ export function createChatStore(): ChatStore {
           s.streamingText = "";
           s.streamingThinking = "";
           s.pendingPermissions = [];
+          s.mcpServers = [];
           s.totalCost = 0;
           s.totalTurns = 0;
         }),
@@ -270,6 +285,7 @@ export function replayEvents(store: ChatStore, events: SSEEvent[]): void {
         break;
       case "session_init":
         s.setSdkSessionId(data.sdkSessionId);
+        if (data.mcpServers) s.setMcpServers(data.mcpServers);
         break;
       case "thinking_delta":
         s.appendStreamingThinking(data.text);

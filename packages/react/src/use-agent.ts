@@ -81,8 +81,9 @@ export function useAgent(store: ChatStore, config?: UseAgentConfig): UseAgentRet
     abortedRef.current = false;
 
     es.addEventListener("session_init", (e) => {
-      const { sdkSessionId: id } = JSON.parse(e.data);
+      const { sdkSessionId: id, mcpServers } = JSON.parse(e.data);
       store.getState().setSdkSessionId(id);
+      if (mcpServers) store.getState().setMcpServers(mcpServers);
     });
 
     es.addEventListener("message_start", () => {

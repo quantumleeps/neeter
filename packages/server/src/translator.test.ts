@@ -353,6 +353,10 @@ describe("MessageTranslator", () => {
         session_id: "sdk-abc-123",
         model: "claude-sonnet-4-20250514",
         tools: ["Read", "Write", "Bash"],
+        mcp_servers: [
+          { name: "github", status: "connected" },
+          { name: "db", status: "failed" },
+        ],
       },
       s,
     );
@@ -363,10 +367,40 @@ describe("MessageTranslator", () => {
           sdkSessionId: "sdk-abc-123",
           model: "claude-sonnet-4-20250514",
           tools: ["Read", "Write", "Bash"],
+          mcpServers: [
+            { name: "github", status: "connected" },
+            { name: "db", status: "failed" },
+          ],
         }),
       },
     ]);
     expect(s.sdkSessionId).toBe("sdk-abc-123");
+  });
+
+  it("emits empty mcpServers when system init has no mcp_servers", () => {
+    const t = new MessageTranslator();
+    const s = stubSession();
+    const events = t.translate(
+      {
+        type: "system",
+        subtype: "init",
+        session_id: "sdk-no-mcp",
+        model: "claude-sonnet-4-20250514",
+        tools: [],
+      },
+      s,
+    );
+    expect(events).toEqual([
+      {
+        event: "session_init",
+        data: JSON.stringify({
+          sdkSessionId: "sdk-no-mcp",
+          model: "claude-sonnet-4-20250514",
+          tools: [],
+          mcpServers: [],
+        }),
+      },
+    ]);
   });
 
   it("ignores non-init system messages", () => {

@@ -8,15 +8,21 @@ describe("replayEvents", () => {
       { event: "user_message", data: JSON.stringify({ text: "Hello" }) },
       {
         event: "session_init",
-        data: JSON.stringify({ sdkSessionId: "sdk-1", model: "test", tools: [] }),
+        data: JSON.stringify({
+          sdkSessionId: "sdk-1",
+          model: "test",
+          tools: [],
+          mcpServers: [{ name: "github", status: "connected" }],
+        }),
       },
       { event: "text_delta", data: JSON.stringify({ text: "Hi " }) },
       { event: "text_delta", data: JSON.stringify({ text: "there!" }) },
       { event: "turn_complete", data: JSON.stringify({ cost: 0.01, numTurns: 1 }) },
     ]);
 
-    const { messages, sdkSessionId, totalCost, totalTurns } = store.getState();
+    const { messages, sdkSessionId, mcpServers, totalCost, totalTurns } = store.getState();
     expect(sdkSessionId).toBe("sdk-1");
+    expect(mcpServers).toEqual([{ name: "github", status: "connected" }]);
     expect(messages).toHaveLength(2);
     expect(messages[0]).toMatchObject({ role: "user", content: "Hello" });
     expect(messages[1]).toMatchObject({ role: "assistant", content: "Hi there!" });

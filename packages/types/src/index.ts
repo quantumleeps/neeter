@@ -10,10 +10,16 @@ export interface CustomEvent<T = unknown> {
   value: T;
 }
 
+export interface McpServerStatus {
+  name: string;
+  status: string;
+}
+
 export interface SessionInitEvent {
   sdkSessionId: string;
   model: string;
   tools: string[];
+  mcpServers: McpServerStatus[];
 }
 
 export interface SessionHistoryEntry {

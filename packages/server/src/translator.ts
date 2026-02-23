@@ -189,6 +189,7 @@ export class MessageTranslator<TCtx> {
             sdkSessionId,
             model: message.model as string,
             tools: message.tools as string[],
+            mcpServers: (message.mcp_servers as Array<{ name: string; status: string }>) ?? [],
           };
           events.push({
             event: "session_init",
