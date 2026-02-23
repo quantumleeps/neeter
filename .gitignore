@@ -32,4 +32,5 @@ sandboxes/
 .neeter-data/
 
 # claude
-.claude/
+.claude/*
+!.claude/skills/
