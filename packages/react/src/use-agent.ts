@@ -22,7 +22,11 @@ export interface UseAgentReturn {
   sendMessage: (text: string) => Promise<void>;
   stopSession: () => Promise<void>;
   respondToPermission: (response: PermissionResponse) => Promise<void>;
-  resumeSession: (options?: { fork?: boolean; sdkSessionId?: string }) => Promise<void>;
+  resumeSession: (options?: {
+    fork?: boolean;
+    sdkSessionId?: string;
+    resumeSessionAt?: string;
+  }) => Promise<void>;
   rewindSession: (
     checkpointId: string,
     options?: { dryRun?: boolean },
@@ -244,7 +248,7 @@ export function useAgent(store: ChatStore, config?: UseAgentConfig): UseAgentRet
   );
 
   const resumeSession = useCallback(
-    async (options?: { fork?: boolean; sdkSessionId?: string }) => {
+    async (options?: { fork?: boolean; sdkSessionId?: string; resumeSessionAt?: string }) => {
       const targetSdkSessionId = options?.sdkSessionId ?? store.getState().sdkSessionId;
       if (!targetSdkSessionId) return;
 
@@ -259,7 +263,9 @@ export function useAgent(store: ChatStore, config?: UseAgentConfig): UseAgentRet
         const eventsRes = await fetch(`${endpoint}/sessions/replay/${targetSdkSessionId}`);
         if (eventsRes.ok) {
           const events: SSEEvent[] = await eventsRes.json();
-          replayEvents(store, events);
+          replayEvents(store, events, {
+            stopAtCheckpoint: options?.resumeSessionAt,
+          });
         }
       } catch {
         /* replay is best-effort */
@@ -271,6 +277,7 @@ export function useAgent(store: ChatStore, config?: UseAgentConfig): UseAgentRet
         body: JSON.stringify({
           sdkSessionId: targetSdkSessionId,
           forkSession: options?.fork,
+          resumeSessionAt: options?.resumeSessionAt,
         }),
       });
       const data = await res.json();

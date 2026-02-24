@@ -12,7 +12,7 @@ For usage examples, see the [Server Guide](server.md) and [Client Guide](client.
 | `SessionManagerOptions` | Constructor options — `idleTimeoutMs`, `store` |
 | `Session<TCtx>` | A single session — `id`, `sdkSessionId`, `context`, `pushMessage()`, `permissionGate`, `abort()` |
 | `SessionInit<TCtx>` | Factory return type — `model`, `systemPrompt`, `permissionMode`, `mcpServers`, `extraArgs`, `env`, etc. |
-| `ResumeOptions` | Options for `SessionManager.resume()` — `sdkSessionId`, `forkSession` |
+| `ResumeOptions` | Options for `SessionManager.resume()` — `sdkSessionId`, `forkSession`, `resumeSessionAt` |
 | `sessionMeta(session)` | Extract a `SessionHistoryEntry` from a `Session` |
 | `createJsonSessionStore(dataDir)` | File-based `SessionStore` using append-only JSONL + JSON metadata |
 | `MessageTranslator<TCtx>` | Converts SDK messages to SSE events |
@@ -33,7 +33,7 @@ For usage examples, see the [Server Guide](server.md) and [Client Guide](client.
 | `useChatStore(selector)` | Zustand selector hook into chat state |
 | `createChatStore()` | Creates a vanilla Zustand store (for advanced use) |
 | `useAgent(store, config?)` | SSE connection hook (used internally by `AgentProvider`). Config: `endpoint`, `resumeSessionId`, `onCustomEvent` |
-| `replayEvents(store, events)` | Reconstruct chat store state from persisted `SSEEvent[]` |
+| `replayEvents(store, events, options?)` | Reconstruct chat store state from persisted `SSEEvent[]`. Pass `stopAtCheckpoint` to truncate at a checkpoint |
 | `MessageList` | Auto-scrolling message list with pending permissions and thinking indicator |
 | `TextMessage` | Markdown-rendered message bubble |
 | `ChatInput` | Textarea + send/stop button (accepts `onStop`, `isStreaming`) |

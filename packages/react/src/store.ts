@@ -284,8 +284,15 @@ export function createChatStore(): ChatStore {
  * store actions as the live SSE stream, so rendering is identical.
  * Call before connecting the EventSource (e.g. during session resume).
  */
-export function replayEvents(store: ChatStore, events: SSEEvent[]): void {
+export function replayEvents(
+  store: ChatStore,
+  events: SSEEvent[],
+  options?: { stopAtCheckpoint?: string },
+): void {
   const s = store.getState();
+  const stopAt = options?.stopAtCheckpoint;
+  let foundTarget = false;
+
   for (const evt of events) {
     const data = JSON.parse(evt.data);
     switch (evt.event) {
@@ -321,16 +328,19 @@ export function replayEvents(store: ChatStore, events: SSEEvent[]): void {
         break;
       case "checkpoint":
         s.addCheckpoint(data.userMessageUuid);
+        if (stopAt && data.userMessageUuid === stopAt) foundTarget = true;
         break;
       case "turn_complete":
         s.flushStreamingThinking();
         s.flushStreamingText();
         s.addCost(data.cost ?? 0, data.numTurns ?? 0);
+        if (foundTarget) return;
         break;
       case "session_error":
         s.flushStreamingThinking();
         s.flushStreamingText();
         s.addSystemMessage(`Session ended: ${data.subtype}`);
+        if (foundTarget) return;
         break;
     }
   }

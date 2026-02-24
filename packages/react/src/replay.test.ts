@@ -152,4 +152,62 @@ describe("replayEvents", () => {
     replayEvents(store, []);
     expect(store.getState().messages).toHaveLength(0);
   });
+
+  it("stops replay at the specified checkpoint", () => {
+    const store = createChatStore();
+    replayEvents(
+      store,
+      [
+        { event: "user_message", data: JSON.stringify({ text: "First" }) },
+        { event: "checkpoint", data: JSON.stringify({ userMessageUuid: "cp-1" }) },
+        { event: "text_delta", data: JSON.stringify({ text: "Reply 1" }) },
+        { event: "turn_complete", data: JSON.stringify({ cost: 0.01, numTurns: 1 }) },
+        { event: "user_message", data: JSON.stringify({ text: "Second" }) },
+        { event: "checkpoint", data: JSON.stringify({ userMessageUuid: "cp-2" }) },
+        { event: "text_delta", data: JSON.stringify({ text: "Reply 2" }) },
+        { event: "turn_complete", data: JSON.stringify({ cost: 0.01, numTurns: 1 }) },
+      ],
+      { stopAtCheckpoint: "cp-1" },
+    );
+
+    const { messages, checkpoints, totalCost } = store.getState();
+    expect(messages).toHaveLength(2);
+    expect(messages[0].content).toBe("First");
+    expect(messages[1].content).toBe("Reply 1");
+    expect(checkpoints).toEqual(["cp-1"]);
+    expect(totalCost).toBe(0.01);
+  });
+
+  it("replays everything when stopAtCheckpoint is not provided", () => {
+    const store = createChatStore();
+    replayEvents(store, [
+      { event: "user_message", data: JSON.stringify({ text: "First" }) },
+      { event: "checkpoint", data: JSON.stringify({ userMessageUuid: "cp-1" }) },
+      { event: "text_delta", data: JSON.stringify({ text: "Reply 1" }) },
+      { event: "turn_complete", data: JSON.stringify({ cost: 0.01, numTurns: 1 }) },
+      { event: "user_message", data: JSON.stringify({ text: "Second" }) },
+      { event: "text_delta", data: JSON.stringify({ text: "Reply 2" }) },
+      { event: "turn_complete", data: JSON.stringify({ cost: 0.01, numTurns: 1 }) },
+    ]);
+
+    expect(store.getState().messages).toHaveLength(4);
+    expect(store.getState().totalCost).toBe(0.02);
+  });
+
+  it("replays everything when stopAtCheckpoint does not match", () => {
+    const store = createChatStore();
+    replayEvents(
+      store,
+      [
+        { event: "user_message", data: JSON.stringify({ text: "First" }) },
+        { event: "checkpoint", data: JSON.stringify({ userMessageUuid: "cp-1" }) },
+        { event: "text_delta", data: JSON.stringify({ text: "Reply 1" }) },
+        { event: "turn_complete", data: JSON.stringify({ cost: 0.01, numTurns: 1 }) },
+      ],
+      { stopAtCheckpoint: "nonexistent" },
+    );
+
+    expect(store.getState().messages).toHaveLength(2);
+    expect(store.getState().totalCost).toBe(0.01);
+  });
 });

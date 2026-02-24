@@ -84,6 +84,34 @@ describe("SessionManager.resume", () => {
     expect(resumed.id).not.toBe(original.id);
     expect(mgr.get(resumed.id)).toBe(resumed);
   });
+
+  it("passes resumeSessionAt to query options", () => {
+    const mgr = createManager();
+    mgr.resume({ sdkSessionId: "sdk-abc", resumeSessionAt: "uuid-cp-1" });
+
+    expect(lastQueryOptions?.resume).toBe("sdk-abc");
+    expect(lastQueryOptions?.resumeSessionAt).toBe("uuid-cp-1");
+  });
+
+  it("omits resumeSessionAt when not provided", () => {
+    const mgr = createManager();
+    mgr.resume({ sdkSessionId: "sdk-abc" });
+
+    expect(lastQueryOptions?.resumeSessionAt).toBeUndefined();
+  });
+
+  it("passes both forkSession and resumeSessionAt", () => {
+    const mgr = createManager();
+    mgr.resume({
+      sdkSessionId: "sdk-abc",
+      forkSession: true,
+      resumeSessionAt: "uuid-cp-1",
+    });
+
+    expect(lastQueryOptions?.resume).toBe("sdk-abc");
+    expect(lastQueryOptions?.forkSession).toBe(true);
+    expect(lastQueryOptions?.resumeSessionAt).toBe("uuid-cp-1");
+  });
 });
 
 describe("SessionInit passthrough", () => {

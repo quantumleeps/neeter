@@ -43,13 +43,18 @@ export function createAgentRouter<TCtx>(config: {
   });
 
   app.post(`${basePath}/sessions/resume`, async (c) => {
-    const body = await c.req.json<{ sdkSessionId: string; forkSession?: boolean }>();
+    const body = await c.req.json<{
+      sdkSessionId: string;
+      forkSession?: boolean;
+      resumeSessionAt?: string;
+    }>();
     if (!body.sdkSessionId?.trim()) {
       return c.json({ error: "sdkSessionId is required" }, 400);
     }
     const session = sessions.resume({
       sdkSessionId: body.sdkSessionId.trim(),
       forkSession: body.forkSession,
+      resumeSessionAt: body.resumeSessionAt?.trim() || undefined,
     });
     return c.json({ sessionId: session.id });
   });

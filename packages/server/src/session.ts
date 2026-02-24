@@ -53,6 +53,7 @@ export interface SessionInit<TCtx> {
 export interface ResumeOptions {
   sdkSessionId: string;
   forkSession?: boolean;
+  resumeSessionAt?: string;
 }
 
 export interface Session<TCtx> {
@@ -123,6 +124,7 @@ export class SessionManager<TCtx> {
     return this.buildSession(init, {
       resume: options.sdkSessionId,
       ...(options.forkSession ? { forkSession: true } : {}),
+      ...(options.resumeSessionAt ? { resumeSessionAt: options.resumeSessionAt } : {}),
     });
   }
 
@@ -179,7 +181,7 @@ export class SessionManager<TCtx> {
 
   private buildSession(
     init: SessionInit<TCtx>,
-    extraQueryOptions?: { resume?: string; forkSession?: boolean },
+    extraQueryOptions?: { resume?: string; forkSession?: boolean; resumeSessionAt?: string },
   ): Session<TCtx> {
     const id = crypto.randomUUID();
     const channel = new PushChannel<SDKUserMessage>();
