@@ -146,6 +146,13 @@ export class MessageTranslator<TCtx> {
       }
 
       case "user": {
+        const uuid = message.uuid as string | undefined;
+        if (uuid) {
+          events.push({
+            event: "checkpoint",
+            data: JSON.stringify({ userMessageUuid: uuid }),
+          });
+        }
         const msg = (message as { message?: { role: string; content: unknown } }).message;
         if (Array.isArray(msg?.content)) {
           for (const block of msg.content) {

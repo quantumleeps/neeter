@@ -2,6 +2,7 @@ import type {
   CustomEvent,
   PermissionRequest,
   PermissionResponse,
+  RewindFilesResult,
   SessionHistoryEntry,
   SSEEvent,
 } from "@neeter/types";
@@ -22,6 +23,10 @@ export interface UseAgentReturn {
   stopSession: () => Promise<void>;
   respondToPermission: (response: PermissionResponse) => Promise<void>;
   resumeSession: (options?: { fork?: boolean; sdkSessionId?: string }) => Promise<void>;
+  rewindSession: (
+    checkpointId: string,
+    options?: { dryRun?: boolean },
+  ) => Promise<RewindFilesResult>;
   newSession: () => Promise<void>;
   refreshHistory: () => Promise<void>;
 }
@@ -185,6 +190,11 @@ export function useAgent(store: ChatStore, config?: UseAgentConfig): UseAgentRet
       }
     });
 
+    es.addEventListener("checkpoint", (e) => {
+      const { userMessageUuid } = JSON.parse(e.data);
+      store.getState().addCheckpoint(userMessageUuid);
+    });
+
     if (onCustomEvent) {
       es.addEventListener("custom", (e) => {
         onCustomEvent(JSON.parse(e.data) as CustomEvent);
@@ -278,6 +288,19 @@ export function useAgent(store: ChatStore, config?: UseAgentConfig): UseAgentRet
     }
   }, [endpoint]);
 
+  const rewindSession = useCallback(
+    async (checkpointId: string, options?: { dryRun?: boolean }): Promise<RewindFilesResult> => {
+      if (!sessionId) return { canRewind: false, error: "No active session" };
+      const res = await fetch(`${endpoint}/sessions/${sessionId}/rewind`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userMessageId: checkpointId, dryRun: options?.dryRun }),
+      });
+      return res.json();
+    },
+    [sessionId, endpoint],
+  );
+
   const newSession = useCallback(async () => {
     if (eventSourceRef.current) {
       eventSourceRef.current.close();
@@ -299,6 +322,7 @@ export function useAgent(store: ChatStore, config?: UseAgentConfig): UseAgentRet
     stopSession,
     respondToPermission,
     resumeSession,
+    rewindSession,
     newSession,
     refreshHistory,
   };

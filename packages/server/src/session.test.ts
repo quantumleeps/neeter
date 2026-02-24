@@ -108,15 +108,17 @@ describe("SessionInit passthrough", () => {
     }));
     mgr.create();
 
-    expect(lastQueryOptions?.env).toEqual({ CLAUDE_CODE_ENABLE_SDK_FILE_CHECKPOINTING: "1" });
+    expect(lastQueryOptions?.env).toMatchObject({
+      CLAUDE_CODE_ENABLE_SDK_FILE_CHECKPOINTING: "1",
+    });
   });
 
-  it("omits extraArgs and env when not provided", () => {
+  it("passes empty extraArgs and process.env when not configured", () => {
     const mgr = createManager();
     mgr.create();
 
-    expect(lastQueryOptions).not.toHaveProperty("extraArgs");
-    expect(lastQueryOptions).not.toHaveProperty("env");
+    expect(lastQueryOptions?.extraArgs).toEqual({});
+    expect(lastQueryOptions?.env).toBeDefined();
   });
 });
 

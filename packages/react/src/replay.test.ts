@@ -134,6 +134,19 @@ describe("replayEvents", () => {
     });
   });
 
+  it("replays checkpoint events", () => {
+    const store = createChatStore();
+    replayEvents(store, [
+      { event: "checkpoint", data: JSON.stringify({ userMessageUuid: "uuid-1" }) },
+      { event: "text_delta", data: JSON.stringify({ text: "Hi" }) },
+      { event: "turn_complete", data: JSON.stringify({ cost: 0, numTurns: 1 }) },
+      { event: "checkpoint", data: JSON.stringify({ userMessageUuid: "uuid-2" }) },
+    ]);
+
+    const { checkpoints } = store.getState();
+    expect(checkpoints).toEqual(["uuid-1", "uuid-2"]);
+  });
+
   it("handles empty events array", () => {
     const store = createChatStore();
     replayEvents(store, []);

@@ -8,7 +8,9 @@ function stubSession(ctx = {}): Session<Record<string, unknown>> {
     id: "sess-1",
     context: ctx,
     pushMessage: () => {},
-    messageIterator: (async function* () {})(),
+    messageIterator: (async function* () {})() as unknown as Session<
+      Record<string, unknown>
+    >["messageIterator"],
     permissionGate: new PermissionGate(),
     abort: () => {},
     createdAt: Date.now(),
@@ -401,6 +403,59 @@ describe("MessageTranslator", () => {
         }),
       },
     ]);
+  });
+
+  it("emits checkpoint event when user message has uuid", () => {
+    const t = new MessageTranslator();
+    t.translate(
+      {
+        type: "assistant",
+        message: { content: [{ type: "tool_use", id: "t-cp", name: "Bash", input: {} }] },
+      },
+      session,
+    );
+    const events = t.translate(
+      {
+        type: "user",
+        uuid: "cp-uuid-123",
+        message: {
+          role: "user",
+          content: [{ type: "tool_result", tool_use_id: "t-cp", content: "done" }],
+        },
+      },
+      session,
+    );
+    expect(events[0]).toEqual({
+      event: "checkpoint",
+      data: JSON.stringify({ userMessageUuid: "cp-uuid-123" }),
+    });
+    expect(events[1]).toEqual({
+      event: "tool_result",
+      data: JSON.stringify({ toolUseId: "t-cp", result: "done", isError: false }),
+    });
+  });
+
+  it("does not emit checkpoint when user message has no uuid", () => {
+    const t = new MessageTranslator();
+    t.translate(
+      {
+        type: "assistant",
+        message: { content: [{ type: "tool_use", id: "t-no", name: "Read", input: {} }] },
+      },
+      session,
+    );
+    const events = t.translate(
+      {
+        type: "user",
+        message: {
+          role: "user",
+          content: [{ type: "tool_result", tool_use_id: "t-no", content: "ok" }],
+        },
+      },
+      session,
+    );
+    expect(events).toHaveLength(1);
+    expect(events[0].event).toBe("tool_result");
   });
 
   it("ignores non-init system messages", () => {

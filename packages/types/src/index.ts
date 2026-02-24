@@ -97,6 +97,25 @@ export interface UserQuestionResponse {
 
 export type PermissionResponse = ToolApprovalResponse | UserQuestionResponse;
 
+// --- File Checkpointing ---
+
+export interface CheckpointEvent {
+  userMessageUuid: string;
+}
+
+export interface RewindFilesRequest {
+  userMessageId: string;
+  dryRun?: boolean;
+}
+
+export interface RewindFilesResult {
+  canRewind: boolean;
+  error?: string;
+  filesChanged?: string[];
+  insertions?: number;
+  deletions?: number;
+}
+
 // --- Persistence ---
 
 export interface SessionRecord {

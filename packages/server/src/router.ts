@@ -1,4 +1,4 @@
-import type { PermissionResponse, SSEEvent } from "@neeter/types";
+import type { PermissionResponse, RewindFilesRequest, SSEEvent } from "@neeter/types";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { type Session, type SessionManager, sessionMeta } from "./session.js";
@@ -14,6 +14,7 @@ const PERSISTED_EVENTS = new Set([
   "session_init",
   "session_error",
   "custom",
+  "checkpoint",
 ]);
 
 /**
@@ -156,6 +157,22 @@ export function createAgentRouter<TCtx>(config: {
 
     session.lastActivityAt = Date.now();
     return c.json({ ok: true });
+  });
+
+  app.post(`${basePath}/sessions/:id/rewind`, async (c) => {
+    const session = sessions.get(c.req.param("id"));
+    if (!session) return c.json({ error: "Session not found" }, 404);
+
+    const body = await c.req.json<RewindFilesRequest>();
+    if (!body.userMessageId?.trim()) {
+      return c.json({ error: "userMessageId is required" }, 400);
+    }
+
+    const result = await session.messageIterator.rewindFiles(body.userMessageId.trim(), {
+      dryRun: body.dryRun,
+    });
+    session.lastActivityAt = Date.now();
+    return c.json(result);
   });
 
   app.post(`${basePath}/sessions/:id/abort`, (c) => {

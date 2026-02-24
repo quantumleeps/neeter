@@ -18,6 +18,7 @@ interface ChatStoreState {
   streamingThinking: string;
   pendingPermissions: PermissionRequest[];
   mcpServers: McpServerStatus[];
+  checkpoints: string[];
   totalCost: number;
   totalTurns: number;
 }
@@ -41,6 +42,7 @@ interface ChatStoreActions {
   addPermissionRequest: (request: PermissionRequest) => void;
   removePermissionRequest: (requestId: string) => void;
   setMcpServers: (servers: McpServerStatus[]) => void;
+  addCheckpoint: (uuid: string) => void;
   addCost: (cost: number, turns: number) => void;
   cancelInflightToolCalls: () => void;
   reset: () => void;
@@ -78,6 +80,7 @@ export function createChatStore(): ChatStore {
       streamingThinking: "",
       pendingPermissions: [],
       mcpServers: [],
+      checkpoints: [],
       totalCost: 0,
       totalTurns: 0,
 
@@ -228,6 +231,11 @@ export function createChatStore(): ChatStore {
           s.mcpServers = servers;
         }),
 
+      addCheckpoint: (uuid) =>
+        set((s) => {
+          s.checkpoints.push(uuid);
+        }),
+
       addCost: (cost, turns) =>
         set((s) => {
           s.totalCost += cost;
@@ -263,6 +271,7 @@ export function createChatStore(): ChatStore {
           s.streamingThinking = "";
           s.pendingPermissions = [];
           s.mcpServers = [];
+          s.checkpoints = [];
           s.totalCost = 0;
           s.totalTurns = 0;
         }),
@@ -309,6 +318,9 @@ export function replayEvents(store: ChatStore, events: SSEEvent[]): void {
         } else {
           s.completeToolCall(data.toolUseId, data.result);
         }
+        break;
+      case "checkpoint":
+        s.addCheckpoint(data.userMessageUuid);
         break;
       case "turn_complete":
         s.flushStreamingThinking();

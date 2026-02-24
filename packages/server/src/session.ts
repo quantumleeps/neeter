@@ -2,14 +2,13 @@ import {
   type HookCallbackMatcher,
   type HookEvent,
   type McpServerConfig,
+  type Query,
   query,
   type SDKUserMessage,
 } from "@anthropic-ai/claude-agent-sdk";
 import type { SessionHistoryEntry, SessionStore, SSEEvent, UserQuestion } from "@neeter/types";
 import { PermissionGate } from "./permission-gate.js";
 import { PushChannel } from "./push-channel.js";
-
-type SDKMessage = ReturnType<typeof query> extends AsyncGenerator<infer T> ? T : never;
 
 function userMessage(content: string): SDKUserMessage {
   return {
@@ -47,6 +46,8 @@ export interface SessionInit<TCtx> {
   extraArgs?: Record<string, string | null>;
   /** Environment variables forwarded to the Claude Code subprocess. */
   env?: Record<string, string | undefined>;
+  /** Track file changes and enable rewinding to previous states. Off by default. */
+  enableFileCheckpointing?: boolean;
 }
 
 export interface ResumeOptions {
@@ -61,7 +62,7 @@ export interface Session<TCtx> {
   cwd?: string;
   context: TCtx;
   pushMessage(text: string): void;
-  messageIterator: AsyncIterable<SDKMessage>;
+  messageIterator: Query;
   permissionGate: PermissionGate;
   abort(): void;
   createdAt: number;
@@ -247,8 +248,18 @@ export class SessionManager<TCtx> {
         ...(init.cwd ? { cwd: init.cwd } : {}),
         ...(init.disallowedTools ? { disallowedTools: init.disallowedTools } : {}),
         ...(init.hooks ? { hooks: init.hooks } : {}),
-        ...(init.extraArgs ? { extraArgs: init.extraArgs } : {}),
-        ...(init.env ? { env: init.env } : {}),
+        ...(init.enableFileCheckpointing ? { enableFileCheckpointing: true } : {}),
+        extraArgs: {
+          ...(init.enableFileCheckpointing ? { "replay-user-messages": null } : {}),
+          ...init.extraArgs,
+        },
+        env: {
+          ...process.env,
+          ...(init.enableFileCheckpointing
+            ? { CLAUDE_CODE_ENABLE_SDK_FILE_CHECKPOINTING: "1" }
+            : {}),
+          ...init.env,
+        },
         ...extraQueryOptions,
       },
     });
