@@ -160,7 +160,7 @@ const sessions = new SessionManager(
 
 The `SessionStore` interface is pluggable — implement `save`, `load`, `list`, and `delete` to back it with a database instead of the filesystem.
 
-> **Security note:** `createJsonSessionStore` writes conversation data — including tool inputs and outputs — to disk unencrypted. Use it for development and trusted environments. Gate it behind an opt-in flag (like `--persist`) to keep the default workflow side-effect-free. The [live-preview](../examples/live-preview) example implements this pattern.
+> **Security note:** `createJsonSessionStore` writes conversation data — including tool inputs and outputs — to disk unencrypted. Use it for development and trusted environments. See the [code-workbench](../examples/code-workbench) example for a complete persistence setup.
 
 ## Sandbox hook
 
@@ -182,7 +182,7 @@ const sessions = new SessionManager(() => ({
 
 Bash is blocked by default — shell commands can reference paths outside the sandbox in ways that can't be reliably detected. Set `{ allowBash: true }` only when using OS-level isolation (containers, VMs, or `@anthropic-ai/sandbox-runtime`).
 
-See the [live-preview](../examples/live-preview) example for a complete sandboxing setup.
+See the [code-workbench](../examples/code-workbench) example for a complete sandboxing setup.
 
 ---
 

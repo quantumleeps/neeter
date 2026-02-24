@@ -1,10 +1,9 @@
 {
-  "name": "live-preview",
+  "name": "code-workbench",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "concurrently -n server,client -c blue,green \"tsx watch server.ts\" \"vite\"",
-    "dev:persist": "concurrently -n server,client -c blue,green \"tsx watch server.ts --persist\" \"vite\"",
     "dev:server": "tsx watch server.ts",
     "dev:client": "vite",
     "build": "vite build"

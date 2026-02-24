@@ -5,7 +5,7 @@ import {
   useAgentContext,
   useChatStore,
 } from "@neeter/react";
-import type { CustomEvent } from "@neeter/types";
+import type { CustomEvent, RewindFilesResult } from "@neeter/types";
 import { ArrowRight, Check, Copy, History, Plus } from "lucide-react";
 import { Highlight, themes } from "prism-react-renderer";
 import { type RefObject, useCallback, useRef, useState } from "react";
@@ -39,11 +39,11 @@ function Layout({ iframeRef }: { iframeRef: RefObject<HTMLIFrameElement | null> 
     refreshHistory,
   } = useAgentContext();
   const isStreaming = useChatStore((s) => s.isStreaming);
-  const [codeOpen, setCodeOpen] = useState(false);
-  const [code, setCode] = useState("");
   const [resumeInput, setResumeInput] = useState("");
   const [showResumePanel, setShowResumePanel] = useState(false);
   const [showManualInput, setShowManualInput] = useState(false);
+  const [codeOpen, setCodeOpen] = useState(false);
+  const [code, setCode] = useState("");
 
   // Track the "active" sdkSessionId locally so it survives store.reset() during resume
   const [displaySdkSessionId, setDisplaySdkSessionId] = useState<string | null>(null);
@@ -76,6 +76,13 @@ function Layout({ iframeRef }: { iframeRef: RefObject<HTMLIFrameElement | null> 
     }
   }, [sessionId]);
 
+  const handleFilesRewound = useCallback(
+    (_result: RewindFilesResult) => {
+      iframeRef.current?.contentWindow?.location.reload();
+    },
+    [iframeRef],
+  );
+
   const previewSrc = sessionId ? `/api/sessions/${sessionId}/preview/index.html` : "about:blank";
 
   return (
@@ -84,7 +91,7 @@ function Layout({ iframeRef }: { iframeRef: RefObject<HTMLIFrameElement | null> 
       <div className="flex w-[420px] shrink-0 flex-col border-r">
         <header className="border-b px-4 py-3">
           <div className="flex items-center justify-between">
-            <h1 className="text-lg font-semibold">Live Preview</h1>
+            <h1 className="text-lg font-semibold">Code Workbench</h1>
             <div className="flex items-center gap-3">
               {displaySdkSessionId && (
                 <button
@@ -183,7 +190,7 @@ function Layout({ iframeRef }: { iframeRef: RefObject<HTMLIFrameElement | null> 
             </div>
           )}
         </header>
-        <MessageList className="flex-1" />
+        <MessageList className="flex-1" onFilesRewound={handleFilesRewound} />
         <div className="border-t">
           <ChatInput onSend={sendMessage} onStop={stopSession} isStreaming={isStreaming} />
         </div>
@@ -205,7 +212,7 @@ function Layout({ iframeRef }: { iframeRef: RefObject<HTMLIFrameElement | null> 
         </div>
         <div className="relative flex-1">
           {codeOpen && (
-            <div className="absolute inset-0 z-10 overflow-auto bg-zinc-900/95 backdrop-blur-sm">
+            <div className="absolute inset-0 z-10 overflow-auto bg-zinc-900/80 backdrop-blur-sm">
               <Highlight code={code.trimEnd()} language="jsx" theme={themes.nightOwl}>
                 {({ tokens, getLineProps, getTokenProps }) => (
                   <pre className="p-4 text-xs leading-relaxed !bg-transparent">

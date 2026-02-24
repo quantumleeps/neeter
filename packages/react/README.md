@@ -69,7 +69,7 @@ Without shadcn, import the bundled theme:
 | Example | Description |
 |---------|-------------|
 | [basic-chat](https://github.com/quantumleeps/neeter/tree/main/examples/basic-chat) | Minimal component setup |
-| [live-preview](https://github.com/quantumleeps/neeter/tree/main/examples/live-preview) | Custom events, widgets, split-pane preview |
+| [code-workbench](https://github.com/quantumleeps/neeter/tree/main/examples/code-workbench) | Custom events, widgets, split-pane preview, file checkpointing |
 
 ## Documentation
 

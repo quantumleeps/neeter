@@ -19,6 +19,7 @@ interface ChatStoreState {
   pendingPermissions: PermissionRequest[];
   mcpServers: McpServerStatus[];
   checkpoints: string[];
+  fileCheckpointing: boolean;
   totalCost: number;
   totalTurns: number;
 }
@@ -43,6 +44,7 @@ interface ChatStoreActions {
   removePermissionRequest: (requestId: string) => void;
   setMcpServers: (servers: McpServerStatus[]) => void;
   addCheckpoint: (uuid: string) => void;
+  setFileCheckpointing: (v: boolean) => void;
   addCost: (cost: number, turns: number) => void;
   cancelInflightToolCalls: () => void;
   reset: () => void;
@@ -81,6 +83,7 @@ export function createChatStore(): ChatStore {
       pendingPermissions: [],
       mcpServers: [],
       checkpoints: [],
+      fileCheckpointing: false,
       totalCost: 0,
       totalTurns: 0,
 
@@ -236,6 +239,11 @@ export function createChatStore(): ChatStore {
           s.checkpoints.push(uuid);
         }),
 
+      setFileCheckpointing: (v) =>
+        set((s) => {
+          s.fileCheckpointing = v;
+        }),
+
       addCost: (cost, turns) =>
         set((s) => {
           s.totalCost += cost;
@@ -272,6 +280,7 @@ export function createChatStore(): ChatStore {
           s.pendingPermissions = [];
           s.mcpServers = [];
           s.checkpoints = [];
+          s.fileCheckpointing = false;
           s.totalCost = 0;
           s.totalTurns = 0;
         }),
@@ -291,9 +300,28 @@ export function replayEvents(
 ): void {
   const s = store.getState();
   const stopAt = options?.stopAtCheckpoint;
-  let foundTarget = false;
 
-  for (const evt of events) {
+  // "Before" semantics: truncate events before the target checkpoint's
+  // user message. This matches rewindFiles() which restores files to
+  // their state before that message's turn.
+  let replayable = events;
+  if (stopAt) {
+    const cpIdx = events.findIndex(
+      (e) => e.event === "checkpoint" && JSON.parse(e.data).userMessageUuid === stopAt,
+    );
+    if (cpIdx >= 0) {
+      let cutIdx = cpIdx;
+      for (let i = cpIdx - 1; i >= 0; i--) {
+        if (events[i].event === "user_message") {
+          cutIdx = i;
+          break;
+        }
+      }
+      replayable = events.slice(0, cutIdx);
+    }
+  }
+
+  for (const evt of replayable) {
     const data = JSON.parse(evt.data);
     switch (evt.event) {
       case "user_message":
@@ -302,6 +330,7 @@ export function replayEvents(
       case "session_init":
         s.setSdkSessionId(data.sdkSessionId);
         if (data.mcpServers) s.setMcpServers(data.mcpServers);
+        if (data.fileCheckpointing) s.setFileCheckpointing(true);
         break;
       case "thinking_delta":
         s.appendStreamingThinking(data.text);
@@ -328,19 +357,16 @@ export function replayEvents(
         break;
       case "checkpoint":
         s.addCheckpoint(data.userMessageUuid);
-        if (stopAt && data.userMessageUuid === stopAt) foundTarget = true;
         break;
       case "turn_complete":
         s.flushStreamingThinking();
         s.flushStreamingText();
         s.addCost(data.cost ?? 0, data.numTurns ?? 0);
-        if (foundTarget) return;
         break;
       case "session_error":
         s.flushStreamingThinking();
         s.flushStreamingText();
         s.addSystemMessage(`Session ended: ${data.subtype}`);
-        if (foundTarget) return;
         break;
     }
   }

@@ -146,14 +146,17 @@ export class MessageTranslator<TCtx> {
       }
 
       case "user": {
+        const msg = (message as { message?: { role: string; content: unknown } }).message;
+        // Only emit checkpoints for real user messages (string content),
+        // not tool-result round-trips (array content with tool_result blocks).
+        const isToolResult = Array.isArray(msg?.content);
         const uuid = message.uuid as string | undefined;
-        if (uuid) {
+        if (uuid && !isToolResult) {
           events.push({
             event: "checkpoint",
             data: JSON.stringify({ userMessageUuid: uuid }),
           });
         }
-        const msg = (message as { message?: { role: string; content: unknown } }).message;
         if (Array.isArray(msg?.content)) {
           for (const block of msg.content) {
             if (block.type === "tool_result") {
@@ -197,6 +200,7 @@ export class MessageTranslator<TCtx> {
             model: message.model as string,
             tools: message.tools as string[],
             mcpServers: (message.mcp_servers as Array<{ name: string; status: string }>) ?? [],
+            ...(session.enableFileCheckpointing ? { fileCheckpointing: true } : {}),
           };
           events.push({
             event: "session_init",
@@ -264,6 +268,10 @@ export async function* streamSession<TCtx>(
       for await (const message of session.messageIterator) {
         const events = translator.translate(message as Record<string, unknown>, session);
         for (const evt of events) {
+          // When resuming with resumeSessionAt, the SDK subprocess replays
+          // historical messages. Skip them — only session_init is needed
+          // so the client can set sdkSessionId and mcpServers.
+          if (session.replayGate && evt.event !== "session_init") continue;
           output.push(evt);
         }
       }

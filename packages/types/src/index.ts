@@ -20,6 +20,7 @@ export interface SessionInitEvent {
   model: string;
   tools: string[];
   mcpServers: McpServerStatus[];
+  fileCheckpointing?: boolean;
 }
 
 export interface SessionHistoryEntry {

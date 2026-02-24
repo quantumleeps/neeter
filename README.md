@@ -125,7 +125,7 @@ Components use Tailwind utility classes and accept `className` for overrides.
 | Example | Description |
 |---------|-------------|
 | **[basic-chat](examples/basic-chat)** | Minimal chat UI — `AgentProvider` + `MessageList` + `ChatInput` |
-| **[live-preview](examples/live-preview)** | Split-pane coding assistant with live React preview, per-session sandboxes, and code viewer |
+| **[code-workbench](examples/code-workbench)** | Split-pane coding assistant with live preview, per-session sandboxes, persistence, file checkpointing, and code viewer |
 
 ## Documentation
 

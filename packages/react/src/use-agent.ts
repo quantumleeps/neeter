@@ -90,9 +90,10 @@ export function useAgent(store: ChatStore, config?: UseAgentConfig): UseAgentRet
     abortedRef.current = false;
 
     es.addEventListener("session_init", (e) => {
-      const { sdkSessionId: id, mcpServers } = JSON.parse(e.data);
+      const { sdkSessionId: id, mcpServers, fileCheckpointing } = JSON.parse(e.data);
       store.getState().setSdkSessionId(id);
       if (mcpServers) store.getState().setMcpServers(mcpServers);
+      if (fileCheckpointing) store.getState().setFileCheckpointing(true);
     });
 
     es.addEventListener("message_start", () => {

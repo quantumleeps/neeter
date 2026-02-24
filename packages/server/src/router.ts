@@ -51,11 +51,66 @@ export function createAgentRouter<TCtx>(config: {
     if (!body.sdkSessionId?.trim()) {
       return c.json({ error: "sdkSessionId is required" }, 400);
     }
+
+    const sdkId = body.sdkSessionId.trim();
+    const checkpointId = body.resumeSessionAt?.trim() || undefined;
+
+    // The SDK's resumeSessionAt uses "includes" semantics — the agent's
+    // context retains the target message. Our UI and file rewind use
+    // "before" semantics. For rewind (not fork), translate by passing the
+    // previous checkpoint's UUID so the agent context ends before the
+    // target message. Also truncate the persisted event log.
+    let sdkResumeAt = checkpointId;
+    if (checkpointId && !body.forkSession) {
+      const store = sessions.getStore();
+      if (store) {
+        const record = await store.load(sdkId);
+        if (record) {
+          const allCheckpoints = record.events
+            .filter((e) => e.event === "checkpoint")
+            .map((e) => JSON.parse(e.data).userMessageUuid as string);
+          const targetIdx = allCheckpoints.indexOf(checkpointId);
+          if (targetIdx > 0) {
+            sdkResumeAt = allCheckpoints[targetIdx - 1];
+          } else if (targetIdx === 0) {
+            sdkResumeAt = undefined;
+          }
+
+          const cpIdx = record.events.findIndex(
+            (e) => e.event === "checkpoint" && JSON.parse(e.data).userMessageUuid === checkpointId,
+          );
+          if (cpIdx >= 0) {
+            let cutIdx = cpIdx;
+            for (let i = cpIdx - 1; i >= 0; i--) {
+              if (record.events[i].event === "user_message") {
+                cutIdx = i;
+                break;
+              }
+            }
+            const truncated = record.events.slice(0, cutIdx);
+            await store.delete(sdkId);
+            await store.save(sdkId, { meta: record.meta, events: truncated });
+          }
+        }
+      }
+    }
+
     const session = sessions.resume({
-      sdkSessionId: body.sdkSessionId.trim(),
+      sdkSessionId: sdkId,
       forkSession: body.forkSession,
-      resumeSessionAt: body.resumeSessionAt?.trim() || undefined,
+      resumeSessionAt: sdkResumeAt,
     });
+    // Wait for the SDK subprocess to initialize, then restore file
+    // checkpoints before returning. resumeSessionAt only truncates
+    // conversation context — files must be rewound explicitly.
+    await session.messageIterator.initializationResult();
+    if (checkpointId) {
+      try {
+        await session.messageIterator.rewindFiles(checkpointId);
+      } catch (err) {
+        console.warn("[resume] rewindFiles failed:", (err as Error).message);
+      }
+    }
     return c.json({ sessionId: session.id });
   });
 

@@ -61,6 +61,7 @@ export interface Session<TCtx> {
   sdkSessionId?: string;
   firstPrompt?: string;
   cwd?: string;
+  enableFileCheckpointing?: boolean;
   context: TCtx;
   pushMessage(text: string): void;
   messageIterator: Query;
@@ -68,6 +69,8 @@ export interface Session<TCtx> {
   abort(): void;
   createdAt: number;
   lastActivityAt: number;
+  /** When true, streamSession skips replay events from the SDK subprocess. Cleared on pushMessage. */
+  replayGate?: boolean;
 }
 
 export function sessionMeta(session: Session<unknown>): SessionHistoryEntry {
@@ -269,8 +272,11 @@ export class SessionManager<TCtx> {
     const session: Session<TCtx> = {
       id,
       cwd: init.cwd,
+      enableFileCheckpointing: !!init.enableFileCheckpointing,
       context: init.context,
+      replayGate: !!extraQueryOptions?.resume,
       pushMessage: (text: string) => {
+        session.replayGate = false;
         session.lastActivityAt = Date.now();
         if (!session.firstPrompt) session.firstPrompt = text;
         channel.push(userMessage(text));

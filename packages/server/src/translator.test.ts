@@ -405,8 +405,23 @@ describe("MessageTranslator", () => {
     ]);
   });
 
-  it("emits checkpoint event when user message has uuid", () => {
+  it("emits checkpoint event for real user messages only", () => {
     const t = new MessageTranslator();
+
+    // Real user message (string content) → checkpoint emitted
+    const realEvents = t.translate(
+      {
+        type: "user",
+        uuid: "cp-uuid-real",
+        message: { role: "user", content: "Hello" },
+      },
+      session,
+    );
+    expect(realEvents).toEqual([
+      { event: "checkpoint", data: JSON.stringify({ userMessageUuid: "cp-uuid-real" }) },
+    ]);
+
+    // Tool-result round-trip (array content) → no checkpoint
     t.translate(
       {
         type: "assistant",
@@ -414,10 +429,10 @@ describe("MessageTranslator", () => {
       },
       session,
     );
-    const events = t.translate(
+    const toolEvents = t.translate(
       {
         type: "user",
-        uuid: "cp-uuid-123",
+        uuid: "cp-uuid-tool",
         message: {
           role: "user",
           content: [{ type: "tool_result", tool_use_id: "t-cp", content: "done" }],
@@ -425,14 +440,12 @@ describe("MessageTranslator", () => {
       },
       session,
     );
-    expect(events[0]).toEqual({
-      event: "checkpoint",
-      data: JSON.stringify({ userMessageUuid: "cp-uuid-123" }),
-    });
-    expect(events[1]).toEqual({
-      event: "tool_result",
-      data: JSON.stringify({ toolUseId: "t-cp", result: "done", isError: false }),
-    });
+    expect(toolEvents).toEqual([
+      {
+        event: "tool_result",
+        data: JSON.stringify({ toolUseId: "t-cp", result: "done", isError: false }),
+      },
+    ]);
   });
 
   it("does not emit checkpoint when user message has no uuid", () => {

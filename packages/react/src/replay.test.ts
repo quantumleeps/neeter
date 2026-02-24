@@ -153,7 +153,11 @@ describe("replayEvents", () => {
     expect(store.getState().messages).toHaveLength(0);
   });
 
-  it("stops replay at the specified checkpoint", () => {
+  // stopAtCheckpoint uses "before" semantics: replay everything BEFORE the
+  // checkpoint's user message. This matches rewindFiles() which restores files
+  // to their state before that message's turn.
+
+  it("stopAtCheckpoint on first message yields empty conversation", () => {
     const store = createChatStore();
     replayEvents(
       store,
@@ -171,11 +175,87 @@ describe("replayEvents", () => {
     );
 
     const { messages, checkpoints, totalCost } = store.getState();
+    expect(messages).toHaveLength(0);
+    expect(checkpoints).toEqual([]);
+    expect(totalCost).toBe(0);
+  });
+
+  it("stopAtCheckpoint on second message keeps first message and reply", () => {
+    const store = createChatStore();
+    replayEvents(
+      store,
+      [
+        { event: "user_message", data: JSON.stringify({ text: "First" }) },
+        { event: "checkpoint", data: JSON.stringify({ userMessageUuid: "cp-1" }) },
+        { event: "text_delta", data: JSON.stringify({ text: "Reply 1" }) },
+        { event: "turn_complete", data: JSON.stringify({ cost: 0.01, numTurns: 1 }) },
+        { event: "user_message", data: JSON.stringify({ text: "Second" }) },
+        { event: "checkpoint", data: JSON.stringify({ userMessageUuid: "cp-2" }) },
+        { event: "text_delta", data: JSON.stringify({ text: "Reply 2" }) },
+        { event: "turn_complete", data: JSON.stringify({ cost: 0.01, numTurns: 1 }) },
+      ],
+      { stopAtCheckpoint: "cp-2" },
+    );
+
+    const { messages, checkpoints, totalCost } = store.getState();
     expect(messages).toHaveLength(2);
     expect(messages[0].content).toBe("First");
     expect(messages[1].content).toBe("Reply 1");
     expect(checkpoints).toEqual(["cp-1"]);
     expect(totalCost).toBe(0.01);
+  });
+
+  it("stopAtCheckpoint on third message keeps first two turns", () => {
+    const store = createChatStore();
+    replayEvents(
+      store,
+      [
+        { event: "user_message", data: JSON.stringify({ text: "First" }) },
+        { event: "checkpoint", data: JSON.stringify({ userMessageUuid: "cp-1" }) },
+        { event: "text_delta", data: JSON.stringify({ text: "Reply 1" }) },
+        { event: "turn_complete", data: JSON.stringify({ cost: 0.01, numTurns: 1 }) },
+        { event: "user_message", data: JSON.stringify({ text: "Second" }) },
+        { event: "checkpoint", data: JSON.stringify({ userMessageUuid: "cp-2" }) },
+        { event: "text_delta", data: JSON.stringify({ text: "Reply 2" }) },
+        { event: "turn_complete", data: JSON.stringify({ cost: 0.02, numTurns: 1 }) },
+        { event: "user_message", data: JSON.stringify({ text: "Third" }) },
+        { event: "checkpoint", data: JSON.stringify({ userMessageUuid: "cp-3" }) },
+        { event: "text_delta", data: JSON.stringify({ text: "Reply 3" }) },
+        { event: "turn_complete", data: JSON.stringify({ cost: 0.03, numTurns: 1 }) },
+      ],
+      { stopAtCheckpoint: "cp-3" },
+    );
+
+    const { messages, checkpoints, totalCost } = store.getState();
+    expect(messages).toHaveLength(4);
+    expect(messages[0].content).toBe("First");
+    expect(messages[1].content).toBe("Reply 1");
+    expect(messages[2].content).toBe("Second");
+    expect(messages[3].content).toBe("Reply 2");
+    expect(checkpoints).toEqual(["cp-1", "cp-2"]);
+    expect(totalCost).toBe(0.03);
+  });
+
+  it("stopAtCheckpoint preserves session_init that precedes the target", () => {
+    const store = createChatStore();
+    replayEvents(
+      store,
+      [
+        { event: "user_message", data: JSON.stringify({ text: "First" }) },
+        {
+          event: "session_init",
+          data: JSON.stringify({ sdkSessionId: "sdk-1", model: "test", tools: [] }),
+        },
+        { event: "checkpoint", data: JSON.stringify({ userMessageUuid: "cp-1" }) },
+        { event: "text_delta", data: JSON.stringify({ text: "Reply 1" }) },
+        { event: "turn_complete", data: JSON.stringify({ cost: 0.01, numTurns: 1 }) },
+      ],
+      { stopAtCheckpoint: "cp-1" },
+    );
+
+    // session_init comes between user_message and checkpoint — both excluded
+    expect(store.getState().messages).toHaveLength(0);
+    expect(store.getState().sdkSessionId).toBeNull();
   });
 
   it("replays everything when stopAtCheckpoint is not provided", () => {

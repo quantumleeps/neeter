@@ -1,14 +1,23 @@
+import type { RewindFilesResult } from "@neeter/types";
 import { useEffect, useRef } from "react";
 import { useChatStore } from "./AgentProvider.js";
 import { cn } from "./cn.js";
 import { PendingPermissions } from "./PendingPermissions.js";
+import { RollbackButton } from "./RollbackButton.js";
 import { TextMessage } from "./TextMessage.js";
 import { ThinkingBlock } from "./ThinkingBlock.js";
 import { ThinkingIndicator } from "./ThinkingIndicator.js";
 import { ToolCallCard } from "./ToolCallCard.js";
 
-export function MessageList({ className }: { className?: string }) {
+export function MessageList({
+  className,
+  onFilesRewound,
+}: {
+  className?: string;
+  onFilesRewound?: (result: RewindFilesResult) => void;
+}) {
   const messages = useChatStore((s) => s.messages);
+  const checkpoints = useChatStore((s) => s.checkpoints);
   const streamingText = useChatStore((s) => s.streamingText);
   const streamingThinking = useChatStore((s) => s.streamingThinking);
   const isThinking = useChatStore((s) => s.isThinking);
@@ -18,6 +27,9 @@ export function MessageList({ className }: { className?: string }) {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, streamingText, streamingThinking, isThinking]);
+
+  // Map nth user message → checkpoints[n]
+  let userMsgIndex = 0;
 
   return (
     <div className={cn("flex-1 overflow-y-auto", className)}>
@@ -36,6 +48,23 @@ export function MessageList({ className }: { className?: string }) {
             return (
               <div key={msg.id} className="text-center text-xs text-destructive">
                 {msg.content}
+              </div>
+            );
+          }
+          if (msg.role === "user" && msg.content) {
+            const cpId = checkpoints[userMsgIndex++];
+            return (
+              <div key={msg.id} className="group">
+                {cpId && (
+                  <RollbackButton
+                    checkpointId={cpId}
+                    isFirstCheckpoint={cpId === checkpoints[0]}
+                    onFilesRewound={onFilesRewound}
+                  />
+                )}
+                <div className="flex justify-end">
+                  <TextMessage role="user" content={msg.content} />
+                </div>
               </div>
             );
           }

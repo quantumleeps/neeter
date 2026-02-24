@@ -50,7 +50,7 @@ serve({ fetch: app.fetch, port: 3000 });
 | Example | Description |
 |---------|-------------|
 | [basic-chat](https://github.com/quantumleeps/neeter/tree/main/examples/basic-chat) | Minimal server + client setup |
-| [live-preview](https://github.com/quantumleeps/neeter/tree/main/examples/live-preview) | Per-session sandboxes, custom events, abort |
+| [code-workbench](https://github.com/quantumleeps/neeter/tree/main/examples/code-workbench) | Per-session sandboxes, persistence, file checkpointing, custom events |
 
 ## Documentation
 

@@ -14,8 +14,6 @@ import { Hono } from "hono";
 // a Claude Code session, CLAUDECODE causes the subprocess to refuse to start.
 delete process.env.CLAUDECODE;
 
-const PERSIST = process.argv.includes("--persist");
-
 const SANDBOXES_DIR = resolve("sandboxes");
 const DATA_DIR = resolve(".neeter-data");
 
@@ -108,6 +106,7 @@ const sessions = new SessionManager<SessionContext>(
       tools: ["Read", "Write", "Edit", "Glob", "Grep", "TodoWrite"],
       allowedTools: ["Read", "Glob", "Grep", "Edit", "TodoWrite"],
       disallowedTools: ["WebFetch", "WebSearch", "NotebookEdit"],
+      enableFileCheckpointing: true,
       hooks: {
         PreToolUse: createSandboxHook(sandboxDir, resolve),
       },
@@ -140,7 +139,7 @@ For packages NOT in the import map, use full URLs: import x from "https://esm.sh
 You are building a live preview that the user can see updating in real time.`,
     };
   },
-  { store: PERSIST ? createJsonSessionStore(DATA_DIR) : undefined },
+  { store: createJsonSessionStore(DATA_DIR) },
 );
 
 const translator = new MessageTranslator<SessionContext>({

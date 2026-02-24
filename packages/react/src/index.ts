@@ -34,6 +34,7 @@ export { CollapsibleCard } from "./CollapsibleCard.js";
 export { cn } from "./cn.js";
 export { MessageList } from "./MessageList.js";
 export { PendingPermissions } from "./PendingPermissions.js";
+export { RollbackButton } from "./RollbackButton.js";
 export { getWidget, registerWidget, stripMcpPrefix } from "./registry.js";
 export { StatusDot } from "./StatusDot.js";
 export { type ChatStore, type ChatStoreShape, createChatStore, replayEvents } from "./store.js";
