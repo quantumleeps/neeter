@@ -1,6 +1,6 @@
 {
   "name": "@neeter/react",
-  "version": "0.10.11",
+  "version": "0.11.0",
   "description": "React components and hooks for building chat UIs on top of the Claude Agent SDK",
   "license": "MIT",
   "author": "Dan Leeper",
