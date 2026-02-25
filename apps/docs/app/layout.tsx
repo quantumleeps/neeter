@@ -1,6 +1,6 @@
 import "./global.css";
-import { RootProvider } from "fumadocs-ui/provider/next";
 import type { ReactNode } from "react";
+import { Provider } from "@/app/components/provider";
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
@@ -12,7 +12,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           minHeight: "100vh",
         }}
       >
-        <RootProvider>{children}</RootProvider>
+        <Provider>{children}</Provider>
       </body>
     </html>
   );
