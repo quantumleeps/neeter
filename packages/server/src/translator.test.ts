@@ -219,15 +219,37 @@ describe("MessageTranslator", () => {
   it("emits turn_complete on success result without usage", () => {
     const t = new MessageTranslator();
     const events = t.translate(
-      { type: "result", subtype: "success", num_turns: 3, total_cost_usd: 0.05 },
+      {
+        type: "result",
+        subtype: "success",
+        num_turns: 3,
+        total_cost_usd: 0.05,
+        stop_reason: "end_turn",
+      },
       session,
     );
     expect(events).toEqual([
       {
         event: "turn_complete",
-        data: JSON.stringify({ numTurns: 3, cost: 0.05, usage: null, modelUsage: null }),
+        data: JSON.stringify({
+          numTurns: 3,
+          cost: 0.05,
+          stopReason: "end_turn",
+          usage: null,
+          modelUsage: null,
+        }),
       },
     ]);
+  });
+
+  it("emits turn_complete with stopReason null when stop_reason absent", () => {
+    const t = new MessageTranslator();
+    const events = t.translate(
+      { type: "result", subtype: "success", num_turns: 1, total_cost_usd: 0.01 },
+      session,
+    );
+    const data = JSON.parse(events[0].data);
+    expect(data.stopReason).toBeNull();
   });
 
   it("emits turn_complete with usage and modelUsage when present", () => {
@@ -238,6 +260,7 @@ describe("MessageTranslator", () => {
         subtype: "success",
         num_turns: 5,
         total_cost_usd: 0.12,
+        stop_reason: "end_turn",
         usage: {
           input_tokens: 1000,
           output_tokens: 500,
@@ -270,12 +293,26 @@ describe("MessageTranslator", () => {
     expect(data.modelUsage["claude-sonnet-4-20250514"].costUSD).toBe(0.12);
   });
 
-  it("emits session_error on non-success result", () => {
+  it("emits session_error on non-success result with stopReason", () => {
+    const t = new MessageTranslator();
+    const events = t.translate(
+      { type: "result", subtype: "error_max_turns", stop_reason: "end_turn" },
+      session,
+    );
+    expect(events).toEqual([
+      {
+        event: "session_error",
+        data: JSON.stringify({ subtype: "error_max_turns", stopReason: "end_turn" }),
+      },
+    ]);
+  });
+
+  it("emits session_error with null stopReason when stop_reason absent", () => {
     const t = new MessageTranslator();
     const events = t.translate({ type: "result", subtype: "max_turns" }, session);
-    expect(events).toEqual([
-      { event: "session_error", data: JSON.stringify({ subtype: "max_turns" }) },
-    ]);
+    const data = JSON.parse(events[0].data);
+    expect(data.subtype).toBe("max_turns");
+    expect(data.stopReason).toBeNull();
   });
 
   it("emits thinking_start on content_block_start with thinking", () => {

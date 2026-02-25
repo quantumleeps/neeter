@@ -117,6 +117,16 @@ export interface RewindFilesResult {
   deletions?: number;
 }
 
+// --- Stop Reason ---
+
+export type StopReason =
+  | "end_turn"
+  | "max_tokens"
+  | "stop_sequence"
+  | "refusal"
+  | "tool_use"
+  | null;
+
 // --- Token Usage ---
 
 export interface TokenUsage {
@@ -135,6 +145,7 @@ export interface ModelUsage extends TokenUsage {
 export interface TurnCompleteData {
   numTurns: number;
   cost: number;
+  stopReason: StopReason;
   usage: TokenUsage | null;
   modelUsage: Record<string, ModelUsage> | null;
 }

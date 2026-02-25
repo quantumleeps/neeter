@@ -238,8 +238,12 @@ describe("ChatStore", () => {
 
   it("addCost accumulates cost and turns", () => {
     const store = createChatStore();
-    store.getState().addCost({ cost: 0.005, numTurns: 1, usage: null, modelUsage: null });
-    store.getState().addCost({ cost: 0.012, numTurns: 2, usage: null, modelUsage: null });
+    store
+      .getState()
+      .addCost({ cost: 0.005, numTurns: 1, stopReason: "end_turn", usage: null, modelUsage: null });
+    store
+      .getState()
+      .addCost({ cost: 0.012, numTurns: 2, stopReason: "end_turn", usage: null, modelUsage: null });
 
     const s = store.getState();
     expect(s.totalCost).toBeCloseTo(0.017);
@@ -251,6 +255,7 @@ describe("ChatStore", () => {
     store.getState().addCost({
       cost: 0.05,
       numTurns: 1,
+      stopReason: "end_turn",
       usage: {
         inputTokens: 1000,
         outputTokens: 500,
@@ -262,6 +267,7 @@ describe("ChatStore", () => {
     store.getState().addCost({
       cost: 0.03,
       numTurns: 1,
+      stopReason: "end_turn",
       usage: {
         inputTokens: 800,
         outputTokens: 200,
@@ -281,6 +287,7 @@ describe("ChatStore", () => {
     store.getState().addCost({
       cost: 0.05,
       numTurns: 1,
+      stopReason: "end_turn",
       usage: null,
       modelUsage: {
         "claude-sonnet-4-20250514": {
@@ -297,6 +304,7 @@ describe("ChatStore", () => {
     store.getState().addCost({
       cost: 0.03,
       numTurns: 1,
+      stopReason: "end_turn",
       usage: null,
       modelUsage: {
         "claude-sonnet-4-20250514": {
@@ -325,6 +333,7 @@ describe("ChatStore", () => {
     store.getState().addCost({
       cost: 0.01,
       numTurns: 1,
+      stopReason: "end_turn",
       usage: {
         inputTokens: 100,
         outputTokens: 50,
@@ -351,6 +360,18 @@ describe("ChatStore", () => {
     expect(s.totalInputTokens).toBe(0);
     expect(s.totalOutputTokens).toBe(0);
     expect(s.modelUsage).toBeNull();
+    expect(s.lastStopReason).toBeNull();
+  });
+
+  it("setStopReason stores and resets the last stop reason", () => {
+    const store = createChatStore();
+    expect(store.getState().lastStopReason).toBeNull();
+    store.getState().setStopReason("refusal");
+    expect(store.getState().lastStopReason).toBe("refusal");
+    store.getState().setStopReason("end_turn");
+    expect(store.getState().lastStopReason).toBe("end_turn");
+    store.getState().reset();
+    expect(store.getState().lastStopReason).toBeNull();
   });
 
   it("setSdkSessionId stores the SDK session ID", () => {

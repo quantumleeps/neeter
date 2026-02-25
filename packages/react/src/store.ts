@@ -4,6 +4,7 @@ import type {
   ModelUsage,
   PermissionRequest,
   SSEEvent,
+  StopReason,
   ToolCallInfo,
   TurnCompleteData,
 } from "@neeter/types";
@@ -27,6 +28,7 @@ interface ChatStoreState {
   totalInputTokens: number;
   totalOutputTokens: number;
   modelUsage: Record<string, ModelUsage> | null;
+  lastStopReason: StopReason;
 }
 
 interface ChatStoreActions {
@@ -51,6 +53,7 @@ interface ChatStoreActions {
   addCheckpoint: (uuid: string) => void;
   setFileCheckpointing: (v: boolean) => void;
   addCost: (data: TurnCompleteData) => void;
+  setStopReason: (reason: StopReason) => void;
   cancelInflightToolCalls: () => void;
   reset: () => void;
 }
@@ -94,6 +97,7 @@ export function createChatStore(): ChatStore {
       totalInputTokens: 0,
       totalOutputTokens: 0,
       modelUsage: null,
+      lastStopReason: null,
 
       setSessionId: (id) =>
         set((s) => {
@@ -282,6 +286,11 @@ export function createChatStore(): ChatStore {
           }
         }),
 
+      setStopReason: (reason) =>
+        set((s) => {
+          s.lastStopReason = reason;
+        }),
+
       cancelInflightToolCalls: () =>
         set((s) => {
           for (const msg of s.messages) {
@@ -318,6 +327,7 @@ export function createChatStore(): ChatStore {
           s.totalInputTokens = 0;
           s.totalOutputTokens = 0;
           s.modelUsage = null;
+          s.lastStopReason = null;
         }),
     })),
   );
@@ -396,9 +406,11 @@ export function replayEvents(
       case "turn_complete":
         s.flushStreamingThinking();
         s.flushStreamingText();
+        s.setStopReason(data.stopReason ?? null);
         s.addCost({
           cost: data.cost ?? 0,
           numTurns: data.numTurns ?? 0,
+          stopReason: data.stopReason ?? null,
           usage: data.usage ?? null,
           modelUsage: data.modelUsage ?? null,
         });
@@ -406,6 +418,7 @@ export function replayEvents(
       case "session_error":
         s.flushStreamingThinking();
         s.flushStreamingText();
+        s.setStopReason(data.stopReason ?? null);
         s.addSystemMessage(`Session ended: ${data.subtype}`);
         break;
     }

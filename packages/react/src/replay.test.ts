@@ -92,6 +92,32 @@ describe("replayEvents", () => {
     expect(totalTurns).toBe(2);
   });
 
+  it("replays stop_reason from turn_complete", () => {
+    const store = createChatStore();
+    replayEvents(store, [
+      { event: "text_delta", data: JSON.stringify({ text: "Hi" }) },
+      {
+        event: "turn_complete",
+        data: JSON.stringify({ cost: 0.01, numTurns: 1, stopReason: "end_turn" }),
+      },
+    ]);
+
+    expect(store.getState().lastStopReason).toBe("end_turn");
+  });
+
+  it("replays stop_reason from session_error", () => {
+    const store = createChatStore();
+    replayEvents(store, [
+      { event: "text_delta", data: JSON.stringify({ text: "partial" }) },
+      {
+        event: "session_error",
+        data: JSON.stringify({ subtype: "error_max_turns", stopReason: "end_turn" }),
+      },
+    ]);
+
+    expect(store.getState().lastStopReason).toBe("end_turn");
+  });
+
   it("replays session_error", () => {
     const store = createChatStore();
     replayEvents(store, [

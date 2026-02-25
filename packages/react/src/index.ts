@@ -20,6 +20,7 @@ export type {
   SessionHistoryEntry,
   SessionInitEvent,
   SSEEvent,
+  StopReason,
   TokenUsage,
   ToolApprovalRequest,
   ToolApprovalResponse,

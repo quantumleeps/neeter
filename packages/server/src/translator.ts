@@ -211,6 +211,7 @@ export class MessageTranslator<TCtx> {
       }
 
       case "result": {
+        const stopReason = (message.stop_reason as string) ?? null;
         if (message.subtype === "success") {
           const sdkUsage = message.usage as Record<string, unknown> | undefined;
           const usage = sdkUsage
@@ -226,6 +227,7 @@ export class MessageTranslator<TCtx> {
             data: JSON.stringify({
               numTurns: (message as Record<string, unknown>).num_turns ?? 0,
               cost: (message as Record<string, unknown>).total_cost_usd ?? 0,
+              stopReason,
               usage,
               modelUsage: (message as Record<string, unknown>).modelUsage ?? null,
             }),
@@ -233,7 +235,7 @@ export class MessageTranslator<TCtx> {
         } else {
           events.push({
             event: "session_error",
-            data: JSON.stringify({ subtype: message.subtype }),
+            data: JSON.stringify({ subtype: message.subtype, stopReason }),
           });
         }
         break;

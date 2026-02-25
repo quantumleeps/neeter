@@ -149,16 +149,17 @@ export function useAgent(store: ChatStore, config?: UseAgentConfig): UseAgentRet
     });
 
     es.addEventListener("session_error", (e) => {
+      const { subtype, stopReason } = JSON.parse(e.data);
       store.getState().flushStreamingThinking();
       store.getState().flushStreamingText();
       store.getState().setThinking(false);
       store.getState().setStreaming(false);
+      store.getState().setStopReason(stopReason ?? null);
       if (abortedRef.current) {
         store.getState().cancelInflightToolCalls();
         store.getState().addSystemMessage("Interrupted");
         abortedRef.current = false;
       } else {
-        const { subtype } = JSON.parse(e.data);
         store.getState().addSystemMessage(`Session ended: ${subtype}`);
       }
     });
@@ -169,9 +170,11 @@ export function useAgent(store: ChatStore, config?: UseAgentConfig): UseAgentRet
       store.getState().flushStreamingText();
       store.getState().setThinking(false);
       store.getState().setStreaming(false);
+      store.getState().setStopReason(data.stopReason ?? null);
       store.getState().addCost({
         cost: data.cost ?? 0,
         numTurns: data.numTurns ?? 0,
+        stopReason: data.stopReason ?? null,
         usage: data.usage ?? null,
         modelUsage: data.modelUsage ?? null,
       });
