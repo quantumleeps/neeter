@@ -39,7 +39,10 @@ export interface SessionInit<TCtx> {
   /** Controls browser-side tool approval. Defaults to `"default"`. */
   permissionMode?: "default" | "acceptEdits" | "plan" | "bypassPermissions";
   /** Enable extended thinking (chain-of-thought). Off by default. */
-  thinking?: { type: "enabled"; budgetTokens: number } | { type: "disabled" };
+  thinking?:
+    | { type: "enabled"; budgetTokens: number }
+    | { type: "adaptive" }
+    | { type: "disabled" };
   /** SDK lifecycle hooks (e.g. `PreToolUse` for sandbox enforcement via `createSandboxHook`). */
   hooks?: Partial<Record<HookEvent, HookCallbackMatcher[]>>;
   /** Extra CLI flags forwarded to the Claude Code subprocess. */

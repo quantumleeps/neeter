@@ -32,7 +32,13 @@ const sessions = new SessionManager(() => ({
 }));
 ```
 
-When enabled, thinking blocks stream to the client as `thinking_delta` SSE events and render as collapsible cards in `MessageList`. Set `{ type: "disabled" }` to explicitly turn thinking off (it's off by default).
+| Config | Behavior |
+|--------|----------|
+| `{ type: "enabled", budgetTokens: N }` | Fixed thinking budget — useful for cost control |
+| `{ type: "adaptive" }` | Let the model decide how much to think (Opus 4.6+) |
+| `{ type: "disabled" }` | Explicitly off (this is also the default) |
+
+When thinking is enabled, the Agent SDK suppresses `StreamEvent` messages — the translator falls back to extracting text, thinking, and tool-use blocks from complete `AssistantMessage` objects. The client receives the same `thinking_delta` and `text_delta` SSE events either way, so components like `MessageList` and `ThinkingBlock` work without any special handling.
 
 <p>
   <img src="assets/thinking.png" alt="Extended thinking block with chain-of-thought reasoning" width="600" />

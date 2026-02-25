@@ -376,6 +376,106 @@ describe("MessageTranslator", () => {
     expect(data.stopReason).toBeNull();
   });
 
+  it("emits text_delta from assistant message when no prior stream text (non-streaming fallback)", () => {
+    const t = new MessageTranslator();
+    const events = t.translate(
+      {
+        type: "assistant",
+        message: {
+          content: [{ type: "text", text: "Hello from non-streaming path" }],
+        },
+      },
+      session,
+    );
+    expect(events).toEqual([
+      { event: "text_delta", data: JSON.stringify({ text: "Hello from non-streaming path" }) },
+    ]);
+  });
+
+  it("skips assistant text when stream text already emitted (dedup)", () => {
+    const t = new MessageTranslator();
+    // Simulate stream: message_start → text_delta
+    t.translate({ type: "stream_event", event: { type: "message_start" } }, session);
+    t.translate(
+      {
+        type: "stream_event",
+        event: {
+          type: "content_block_delta",
+          delta: { type: "text_delta", text: "streamed text" },
+        },
+      },
+      session,
+    );
+    // Now the assistant message arrives with the full text block
+    const events = t.translate(
+      {
+        type: "assistant",
+        message: {
+          content: [{ type: "text", text: "streamed text" }],
+        },
+      },
+      session,
+    );
+    expect(events).toEqual([]);
+  });
+
+  it("emits all content from assistant message in non-streaming mode (thinking suppresses stream_event)", () => {
+    const t = new MessageTranslator();
+    // No stream events — simulates thinking-enabled mode where SDK skips StreamEvent
+    const events = t.translate(
+      {
+        type: "assistant",
+        message: {
+          content: [
+            { type: "thinking", thinking: "Let me reason about this..." },
+            { type: "text", text: "Here is my answer." },
+            { type: "tool_use", id: "t-1", name: "Read", input: { file_path: "/a.ts" } },
+          ],
+        },
+      },
+      session,
+    );
+    expect(events).toEqual([
+      { event: "thinking_delta", data: JSON.stringify({ text: "Let me reason about this..." }) },
+      { event: "text_delta", data: JSON.stringify({ text: "Here is my answer." }) },
+      {
+        event: "tool_call",
+        data: JSON.stringify({ id: "t-1", name: "Read", input: { file_path: "/a.ts" } }),
+      },
+    ]);
+  });
+
+  it("resets hadStreamText on new message_start", () => {
+    const t = new MessageTranslator();
+    // First turn: stream text
+    t.translate({ type: "stream_event", event: { type: "message_start" } }, session);
+    t.translate(
+      {
+        type: "stream_event",
+        event: {
+          type: "content_block_delta",
+          delta: { type: "text_delta", text: "first" },
+        },
+      },
+      session,
+    );
+    // New turn: message_start resets the flag
+    t.translate({ type: "stream_event", event: { type: "message_start" } }, session);
+    // Assistant message with text should emit (no stream text this turn)
+    const events = t.translate(
+      {
+        type: "assistant",
+        message: {
+          content: [{ type: "text", text: "second turn text" }],
+        },
+      },
+      session,
+    );
+    expect(events).toEqual([
+      { event: "text_delta", data: JSON.stringify({ text: "second turn text" }) },
+    ]);
+  });
+
   it("emits thinking_start on content_block_start with thinking", () => {
     const t = new MessageTranslator();
     const events = t.translate(
@@ -451,7 +551,47 @@ describe("MessageTranslator", () => {
       },
       session,
     );
-    // Should NOT emit thinking_delta again — only non-thinking blocks pass through
+    // Thinking is skipped (already streamed), but text was never streamed — fallback emits it
+    expect(events).toEqual([{ event: "text_delta", data: JSON.stringify({ text: "response" }) }]);
+  });
+
+  it("skips both thinking and text when both were already streamed (full dedup)", () => {
+    const t = new MessageTranslator();
+    // Simulate full streaming: message_start → thinking → text
+    t.translate({ type: "stream_event", event: { type: "message_start" } }, session);
+    t.translate(
+      {
+        type: "stream_event",
+        event: {
+          type: "content_block_delta",
+          delta: { type: "thinking_delta", thinking: "thought" },
+        },
+      },
+      session,
+    );
+    t.translate(
+      {
+        type: "stream_event",
+        event: {
+          type: "content_block_delta",
+          delta: { type: "text_delta", text: "response" },
+        },
+      },
+      session,
+    );
+    // Assistant message with both — both should be skipped
+    const events = t.translate(
+      {
+        type: "assistant",
+        message: {
+          content: [
+            { type: "thinking", thinking: "thought" },
+            { type: "text", text: "response" },
+          ],
+        },
+      },
+      session,
+    );
     expect(events).toEqual([]);
   });
 

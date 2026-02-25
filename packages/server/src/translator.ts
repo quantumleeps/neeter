@@ -12,6 +12,7 @@ export class MessageTranslator<TCtx> {
   private config: TranslatorConfig<TCtx>;
   private toolNames = new Map<string, string>();
   private hadStreamThinking = false;
+  private hadStreamText = false;
   private lastStreamStopReason: string | null = null;
 
   constructor(config?: TranslatorConfig<TCtx>) {
@@ -30,6 +31,7 @@ export class MessageTranslator<TCtx> {
         switch (event.type) {
           case "message_start": {
             this.hadStreamThinking = false;
+            this.hadStreamText = false;
             events.push({ event: "message_start", data: "{}" });
             break;
           }
@@ -85,6 +87,7 @@ export class MessageTranslator<TCtx> {
                 data: JSON.stringify({ text: delta.thinking }),
               });
             } else if (delta.type === "text_delta" && typeof delta.text === "string") {
+              this.hadStreamText = true;
               events.push({
                 event: "text_delta",
                 data: JSON.stringify({ text: delta.text }),
@@ -117,6 +120,15 @@ export class MessageTranslator<TCtx> {
                   events.push({
                     event: "thinking_delta",
                     data: JSON.stringify({ text: block.thinking }),
+                  });
+                }
+                break;
+              }
+              case "text": {
+                if (!this.hadStreamText && typeof block.text === "string") {
+                  events.push({
+                    event: "text_delta",
+                    data: JSON.stringify({ text: block.text }),
                   });
                 }
                 break;
