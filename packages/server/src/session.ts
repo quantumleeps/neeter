@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import {
   type HookCallbackMatcher,
   type HookEvent,
@@ -189,7 +190,7 @@ export class SessionManager<TCtx> {
     init: SessionInit<TCtx>,
     extraQueryOptions?: { resume?: string; forkSession?: boolean; resumeSessionAt?: string },
   ): Session<TCtx> {
-    const id = crypto.randomUUID();
+    const id = randomUUID();
     const channel = new PushChannel<SDKUserMessage>();
     const abortController = new AbortController();
     const permissionGate = new PermissionGate();
@@ -204,7 +205,7 @@ export class SessionManager<TCtx> {
           input: Record<string, unknown>,
           options: { toolUseID: string },
         ) => {
-          const requestId = crypto.randomUUID();
+          const requestId = randomUUID();
 
           if (toolName === "AskUserQuestion") {
             const questions = (input.questions ?? []) as UserQuestion[];
