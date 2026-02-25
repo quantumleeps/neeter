@@ -102,9 +102,9 @@ Events emitted by the server, handled automatically by `useAgent`:
 | `tool_progress` | `{ toolName, elapsed }` | Long-running tool heartbeat |
 | `permission_request` | `PermissionRequest` | Tool approval or user question awaiting response |
 | `session_init` | `{ sdkSessionId, model, tools }` | SDK session initialized — provides the persistent session ID |
-| `turn_complete` | `{ numTurns, cost, usage, modelUsage }` | Agent turn finished with token usage and per-model costs |
+| `turn_complete` | `{ numTurns, cost, stopReason, usage, modelUsage }` | Agent turn finished with stop reason, token usage, and per-model costs |
 | `custom` | `{ name, value }` | App-specific event from `onToolResult` |
-| `session_error` | `{ subtype }` | Session ended with error |
+| `session_error` | `{ subtype, stopReason }` | Session ended with error |
 
 ---
 

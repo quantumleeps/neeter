@@ -64,7 +64,7 @@ Re-exported from both `@neeter/server` and `@neeter/react`:
 | `WidgetProps<TResult>` | Props passed to widget components |
 | `WidgetRegistration<TResult>` | Widget registration — `toolName`, `label`, `richLabel?`, `inputRenderer?`, `component` |
 | `ChatStore` | `StoreApi<ChatStoreShape>` — vanilla Zustand store |
-| `ChatStoreShape` | Full state + actions interface (includes `totalCost`, `totalTurns`, `totalInputTokens`, `totalOutputTokens`, `modelUsage`) |
+| `ChatStoreShape` | Full state + actions interface (includes `totalCost`, `totalTurns`, `totalInputTokens`, `totalOutputTokens`, `modelUsage`, `lastStopReason`) |
 | `CustomEvent<T>` | `{ name: string, value: T }` — structured app-level event |
 | `SessionInitEvent` | `{ sdkSessionId, model, tools }` — session initialization payload |
 | `SessionHistoryEntry` | `{ sdkSessionId, description, createdAt, lastActivityAt }` — session metadata |
@@ -80,7 +80,8 @@ Re-exported from both `@neeter/server` and `@neeter/react`:
 | `UserQuestionResponse` | `{ kind, requestId, answers: Record<string, string> }` |
 | `TokenUsage` | `{ inputTokens, outputTokens, cacheCreationInputTokens, cacheReadInputTokens }` |
 | `ModelUsage` | `TokenUsage` + `{ webSearchRequests, costUSD, contextWindow }` — per-model breakdown |
-| `TurnCompleteData` | `{ numTurns, cost, usage: TokenUsage \| null, modelUsage: Record<string, ModelUsage> \| null }` |
+| `StopReason` | `"end_turn" \| "max_tokens" \| "stop_sequence" \| "refusal" \| "tool_use" \| null` |
+| `TurnCompleteData` | `{ numTurns, cost, stopReason: StopReason, usage: TokenUsage \| null, modelUsage: Record<string, ModelUsage> \| null }` |
 
 ---
 
