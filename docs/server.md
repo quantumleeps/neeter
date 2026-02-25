@@ -14,7 +14,7 @@
 | `POST` | `/api/sessions/resume` | Resume or fork a session by SDK session ID |
 | `GET` | `/api/sessions/history` | List previous sessions |
 | `GET` | `/api/sessions/replay/:sdkSessionId` | Load persisted events for UI replay |
-| `POST` | `/api/sessions/:id/messages` | Send `{ text }` to a session |
+| `POST` | `/api/sessions/:id/messages` | Send a message — text or multimodal content |
 | `GET` | `/api/sessions/:id/events` | SSE stream of agent events |
 | `POST` | `/api/sessions/:id/permissions` | Respond to a permission request (see [Permissions](#permissions)) |
 | `POST` | `/api/sessions/:id/abort` | Abort the current agent turn |
@@ -67,6 +67,59 @@ When thinking is enabled, the Agent SDK suppresses `StreamEvent` messages — th
 <p>
   <img src="assets/thinking.png" alt="Extended thinking block with chain-of-thought reasoning" width="600" />
 </p>
+
+## Multimodal messages
+
+The messages endpoint accepts plain text or structured content arrays with text and image blocks:
+
+```bash
+# Plain text (unchanged)
+curl -X POST /api/sessions/:id/messages \
+  -d '{ "text": "Hello" }'
+
+# Text + image
+curl -X POST /api/sessions/:id/messages \
+  -d '{
+    "content": [
+      { "type": "text", "text": "Describe this diagram" },
+      {
+        "type": "image",
+        "source": {
+          "type": "base64",
+          "media_type": "image/png",
+          "data": "<base64-encoded data>"
+        }
+      }
+    ]
+  }'
+```
+
+When `content` is provided it takes precedence over `text`. Supported image media types: `image/jpeg`, `image/png`, `image/gif`, `image/webp`.
+
+On the server side, `session.pushMessage()` now accepts `string | ContentBlock[]`:
+
+```typescript
+// Text-only (backward compatible)
+session.pushMessage("Hello");
+
+// Multimodal
+session.pushMessage([
+  { type: "text", text: "What's in this image?" },
+  {
+    type: "image",
+    source: { type: "base64", media_type: "image/png", data: pngBase64 },
+  },
+]);
+```
+
+The `extractText()` helper pulls the text portion from either form — useful for display or logging:
+
+```typescript
+import { extractText } from "@neeter/server";
+
+extractText("Hello");                        // "Hello"
+extractText([{ type: "text", text: "Hi" }]); // "Hi"
+```
 
 ## Session context
 

@@ -1,3 +1,4 @@
+import type { ContentBlock } from "@neeter/types";
 import { describe, expect, it, vi } from "vitest";
 
 let lastQueryOptions: Record<string, unknown> | undefined;
@@ -11,7 +12,7 @@ vi.mock("@anthropic-ai/claude-agent-sdk", () => ({
   },
 }));
 
-import { SessionManager } from "./session.js";
+import { extractText, SessionManager } from "./session.js";
 
 function createManager(
   factory?: (original?: { context: { n: number } }) => {
@@ -200,5 +201,71 @@ describe("SessionManager.listHistory", () => {
     const history = await mgr.listHistory();
     expect(history[0].sdkSessionId).toBe("sdk-new");
     expect(history[1].sdkSessionId).toBe("sdk-old");
+  });
+});
+
+describe("pushMessage with content arrays", () => {
+  it("captures firstPrompt from text blocks in a content array", async () => {
+    const mgr = createManager();
+    const session = mgr.create();
+    session.sdkSessionId = "sdk-mm";
+
+    const content: ContentBlock[] = [
+      { type: "text", text: "Describe this diagram" },
+      {
+        type: "image",
+        source: { type: "base64", media_type: "image/png", data: "iVBOR..." },
+      },
+    ];
+    session.pushMessage(content);
+
+    const history = await mgr.listHistory();
+    expect(history[0].description).toBe("Describe this diagram");
+  });
+
+  it("still captures firstPrompt from a plain string", async () => {
+    const mgr = createManager();
+    const session = mgr.create();
+    session.sdkSessionId = "sdk-txt";
+    session.pushMessage("Hello world");
+
+    const history = await mgr.listHistory();
+    expect(history[0].description).toBe("Hello world");
+  });
+
+  it("joins multiple text blocks with a space", () => {
+    const mgr = createManager();
+    const session = mgr.create();
+
+    const content: ContentBlock[] = [
+      { type: "text", text: "Part one" },
+      { type: "image", source: { type: "base64", media_type: "image/png", data: "abc" } },
+      { type: "text", text: "Part two" },
+    ];
+    session.pushMessage(content);
+
+    expect(session.firstPrompt).toBe("Part one Part two");
+  });
+});
+
+describe("extractText", () => {
+  it("returns the string as-is for string content", () => {
+    expect(extractText("Hello")).toBe("Hello");
+  });
+
+  it("joins text blocks from a content array", () => {
+    const content: ContentBlock[] = [
+      { type: "text", text: "First" },
+      { type: "image", source: { type: "base64", media_type: "image/png", data: "x" } },
+      { type: "text", text: "Second" },
+    ];
+    expect(extractText(content)).toBe("First Second");
+  });
+
+  it("returns empty string for image-only content", () => {
+    const content: ContentBlock[] = [
+      { type: "image", source: { type: "base64", media_type: "image/jpeg", data: "x" } },
+    ];
+    expect(extractText(content)).toBe("");
   });
 });

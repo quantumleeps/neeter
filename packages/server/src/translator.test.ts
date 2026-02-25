@@ -766,6 +766,59 @@ describe("MessageTranslator", () => {
     const events = t.translate({ type: "unknown_type" }, session);
     expect(events).toEqual([]);
   });
+
+  it("emits checkpoint for user messages with content-array (text + image blocks)", () => {
+    const t = new MessageTranslator();
+    const events = t.translate(
+      {
+        type: "user",
+        uuid: "cp-uuid-multimodal",
+        message: {
+          role: "user",
+          content: [
+            { type: "text", text: "Describe this image" },
+            {
+              type: "image",
+              source: { type: "base64", media_type: "image/png", data: "iVBOR..." },
+            },
+          ],
+        },
+      },
+      session,
+    );
+    expect(events).toEqual([
+      { event: "checkpoint", data: JSON.stringify({ userMessageUuid: "cp-uuid-multimodal" }) },
+    ]);
+  });
+
+  it("does not emit checkpoint for tool-result arrays (unchanged behavior)", () => {
+    const t = new MessageTranslator();
+    t.translate(
+      {
+        type: "assistant",
+        message: { content: [{ type: "tool_use", id: "t-tr", name: "Bash", input: {} }] },
+      },
+      session,
+    );
+    const events = t.translate(
+      {
+        type: "user",
+        uuid: "cp-uuid-tool-result",
+        message: {
+          role: "user",
+          content: [{ type: "tool_result", tool_use_id: "t-tr", content: "done" }],
+        },
+      },
+      session,
+    );
+    // Should get tool_result but NOT a checkpoint
+    expect(events).toEqual([
+      {
+        event: "tool_result",
+        data: JSON.stringify({ toolUseId: "t-tr", result: "done", isError: false }),
+      },
+    ]);
+  });
 });
 
 describe("sseEncode", () => {

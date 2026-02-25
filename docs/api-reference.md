@@ -14,6 +14,7 @@ For usage examples, see the [Server Guide](server.md) and [Client Guide](client.
 | `SessionInit<TCtx>` | Factory return type — `model`, `systemPrompt`, `permissionMode`, `mcpServers`, `extraArgs`, `env`, etc. |
 | `ResumeOptions` | Options for `SessionManager.resume()` — `sdkSessionId`, `forkSession`, `resumeSessionAt` |
 | `sessionMeta(session)` | Extract a `SessionHistoryEntry` from a `Session` |
+| `extractText(content)` | Pull the text portion from a `UserMessageContent` value |
 | `createJsonSessionStore(dataDir)` | File-based `SessionStore` using append-only JSONL + JSON metadata |
 | `MessageTranslator<TCtx>` | Converts SDK messages to SSE events |
 | `TranslatorConfig<TCtx>` | Translator options — `onToolResult` hook |
@@ -65,6 +66,11 @@ Re-exported from both `@neeter/server` and `@neeter/react`:
 | `WidgetRegistration<TResult>` | Widget registration — `toolName`, `label`, `richLabel?`, `inputRenderer?`, `component` |
 | `ChatStore` | `StoreApi<ChatStoreShape>` — vanilla Zustand store |
 | `ChatStoreShape` | Full state + actions interface (includes `totalCost`, `totalTurns`, `totalInputTokens`, `totalOutputTokens`, `modelUsage`, `lastStopReason`) |
+| `TextBlock` | `{ type: "text", text: string }` — text content block |
+| `Base64ImageSource` | `{ type: "base64", media_type, data }` — base64-encoded image source |
+| `ImageBlock` | `{ type: "image", source: Base64ImageSource }` — image content block |
+| `ContentBlock` | `TextBlock \| ImageBlock` — single content block |
+| `UserMessageContent` | `string \| ContentBlock[]` — content for a user message |
 | `CustomEvent<T>` | `{ name: string, value: T }` — structured app-level event |
 | `SessionInitEvent` | `{ sdkSessionId, model, tools }` — session initialization payload |
 | `SessionHistoryEntry` | `{ sdkSessionId, description, createdAt, lastActivityAt }` — session metadata |

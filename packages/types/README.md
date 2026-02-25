@@ -13,6 +13,7 @@ pnpm add @neeter/types
 ## What's inside
 
 - **SSE protocol** — `SSEEvent`, `CustomEvent<T>`, `SessionInitEvent`
+- **Content blocks** — `TextBlock`, `ImageBlock`, `ContentBlock`, `UserMessageContent`, `Base64ImageSource`
 - **Chat messages** — `ChatMessage`, `ToolCallInfo`, `ToolCallPhase`
 - **Permissions** — `PermissionRequest`, `PermissionResponse`, `ToolApprovalRequest`, `ToolApprovalResponse`, `UserQuestion`, `UserQuestionRequest`, `UserQuestionResponse`
 - **Persistence** — `SessionStore`, `SessionRecord`, `SessionHistoryEntry`

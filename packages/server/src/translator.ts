@@ -167,9 +167,12 @@ export class MessageTranslator<TCtx> {
 
       case "user": {
         const msg = (message as { message?: { role: string; content: unknown } }).message;
-        // Only emit checkpoints for real user messages (string content),
-        // not tool-result round-trips (array content with tool_result blocks).
-        const isToolResult = Array.isArray(msg?.content);
+        // Emit checkpoints for real user messages (string or content-array with
+        // text/image blocks), not tool-result round-trips (content-array with
+        // tool_result blocks).
+        const isToolResult =
+          Array.isArray(msg?.content) &&
+          (msg.content as Array<{ type: string }>).some((b) => b.type === "tool_result");
         const uuid = message.uuid as string | undefined;
         if (uuid && !isToolResult) {
           events.push({

@@ -1,10 +1,19 @@
-export type { CustomEvent, SSEEvent } from "@neeter/types";
+export type {
+  Base64ImageSource,
+  ContentBlock,
+  CustomEvent,
+  ImageBlock,
+  SSEEvent,
+  TextBlock,
+  UserMessageContent,
+} from "@neeter/types";
 export { createSandboxHook } from "./hooks.js";
 export { createJsonSessionStore } from "./json-store.js";
 export { PermissionGate } from "./permission-gate.js";
 export { PushChannel } from "./push-channel.js";
 export { createAgentRouter } from "./router.js";
 export {
+  extractText,
   type ResumeOptions,
   type Session,
   type SessionInit,

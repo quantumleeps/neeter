@@ -1,8 +1,59 @@
-import type { PermissionResponse, RewindFilesRequest, SSEEvent } from "@neeter/types";
+import type {
+  ContentBlock,
+  PermissionResponse,
+  RewindFilesRequest,
+  SSEEvent,
+  UserMessageContent,
+} from "@neeter/types";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { type Session, type SessionManager, sessionMeta } from "./session.js";
+import { extractText, type Session, type SessionManager, sessionMeta } from "./session.js";
 import { type MessageTranslator, sseEncode, streamSession } from "./translator.js";
+
+const VALID_IMAGE_MEDIA_TYPES = new Set(["image/jpeg", "image/png", "image/gif", "image/webp"]);
+
+function validateContentBlocks(
+  blocks: unknown[],
+): { ok: true; content: ContentBlock[] } | { ok: false; error: string } {
+  if (blocks.length === 0) return { ok: false, error: "Content array must not be empty" };
+  const validated: ContentBlock[] = [];
+  for (const block of blocks) {
+    const b = block as Record<string, unknown>;
+    switch (b.type) {
+      case "text": {
+        if (typeof b.text !== "string" || !b.text.trim()) {
+          return { ok: false, error: "Text blocks must have non-empty text" };
+        }
+        validated.push({ type: "text", text: b.text });
+        break;
+      }
+      case "image": {
+        const src = b.source as Record<string, unknown> | undefined;
+        if (!src || src.type !== "base64") {
+          return { ok: false, error: "Image blocks must have a base64 source" };
+        }
+        if (!VALID_IMAGE_MEDIA_TYPES.has(src.media_type as string)) {
+          return { ok: false, error: `Unsupported media type: ${src.media_type}` };
+        }
+        if (typeof src.data !== "string" || !src.data) {
+          return { ok: false, error: "Image blocks must have non-empty base64 data" };
+        }
+        validated.push({
+          type: "image",
+          source: {
+            type: "base64",
+            media_type: src.media_type as "image/jpeg" | "image/png" | "image/gif" | "image/webp",
+            data: src.data,
+          },
+        });
+        break;
+      }
+      default:
+        return { ok: false, error: `Unknown content block type: ${b.type}` };
+    }
+  }
+  return { ok: true, content: validated };
+}
 
 const PERSISTED_EVENTS = new Set([
   "text_delta",
@@ -29,7 +80,7 @@ export function createAgentRouter<TCtx>(config: {
 }): Hono {
   const { sessions, translator, basePath = "/api" } = config;
   const app = new Hono();
-  const pendingUserMessages = new WeakMap<Session<TCtx>, string[]>();
+  const pendingUserMessages = new WeakMap<Session<TCtx>, UserMessageContent[]>();
 
   app.use(`${basePath}/*`, cors({ origin: "*" }));
 
@@ -118,21 +169,34 @@ export function createAgentRouter<TCtx>(config: {
     const session = sessions.get(c.req.param("id"));
     if (!session) return c.json({ error: "Session not found" }, 404);
 
-    const body = await c.req.json<{ text: string }>();
-    if (!body.text?.trim()) return c.json({ error: "Message text required" }, 400);
+    const body = await c.req.json<{ text?: string; content?: unknown[] }>();
 
-    const text = body.text.trim();
-    session.pushMessage(text);
+    let messageContent: UserMessageContent;
+    if (Array.isArray(body.content)) {
+      const result = validateContentBlocks(body.content);
+      if (!result.ok) return c.json({ error: result.error }, 400);
+      messageContent = result.content;
+    } else if (body.text?.trim()) {
+      messageContent = body.text.trim();
+    } else {
+      return c.json({ error: "Message text or content required" }, 400);
+    }
+
+    session.pushMessage(messageContent);
+
+    const text = extractText(messageContent);
+    const persistData: Record<string, unknown> = { text };
+    if (typeof messageContent !== "string") persistData.content = messageContent;
 
     const store = sessions.getStore();
     if (store && session.sdkSessionId) {
       void store.save(session.sdkSessionId, {
         meta: sessionMeta(session),
-        events: [{ event: "user_message", data: JSON.stringify({ text }) }],
+        events: [{ event: "user_message", data: JSON.stringify(persistData) }],
       });
     } else if (store) {
       const pending = pendingUserMessages.get(session) ?? [];
-      pending.push(text);
+      pending.push(messageContent);
       pendingUserMessages.set(session, pending);
     }
 
@@ -150,10 +214,12 @@ export function createAgentRouter<TCtx>(config: {
           if (evt.event === "session_init") {
             const pending = pendingUserMessages.get(session);
             if (pending) {
-              const userEvents = pending.map((text) => ({
-                event: "user_message",
-                data: JSON.stringify({ text }),
-              }));
+              const userEvents = pending.map((content) => {
+                const text = extractText(content);
+                const data: Record<string, unknown> = { text };
+                if (typeof content !== "string") data.content = content;
+                return { event: "user_message", data: JSON.stringify(data) };
+              });
               void store.save(session.sdkSessionId, {
                 meta: sessionMeta(session),
                 events: [...userEvents, evt],

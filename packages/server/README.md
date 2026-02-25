@@ -45,6 +45,29 @@ app.route("/", createAgentRouter({ sessions, translator }));
 serve({ fetch: app.fetch, port: 3000 });
 ```
 
+## Multimodal messages
+
+Send images alongside text via the messages endpoint:
+
+```typescript
+// POST /api/sessions/:id/messages
+{
+  "content": [
+    { "type": "text", "text": "Describe this image" },
+    {
+      "type": "image",
+      "source": {
+        "type": "base64",
+        "media_type": "image/png",
+        "data": "<base64>"
+      }
+    }
+  ]
+}
+```
+
+Plain `{ "text": "..." }` payloads continue to work as before. See the [Server Guide](https://github.com/quantumleeps/neeter/blob/main/docs/server.md#multimodal-messages) for details.
+
 ## Examples
 
 | Example | Description |

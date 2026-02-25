@@ -7,17 +7,33 @@ import {
   query,
   type SDKUserMessage,
 } from "@anthropic-ai/claude-agent-sdk";
-import type { SessionHistoryEntry, SessionStore, SSEEvent, UserQuestion } from "@neeter/types";
+import type {
+  SessionHistoryEntry,
+  SessionStore,
+  SSEEvent,
+  TextBlock,
+  UserMessageContent,
+  UserQuestion,
+} from "@neeter/types";
 import { PermissionGate } from "./permission-gate.js";
 import { PushChannel } from "./push-channel.js";
 
-function userMessage(content: string): SDKUserMessage {
+function userMessage(content: UserMessageContent): SDKUserMessage {
   return {
     type: "user",
     message: { role: "user", content },
     parent_tool_use_id: null,
     session_id: "",
   };
+}
+
+/** Extract the text portion from a `UserMessageContent` value. */
+export function extractText(content: UserMessageContent): string {
+  if (typeof content === "string") return content;
+  return content
+    .filter((b): b is TextBlock => b.type === "text")
+    .map((b) => b.text)
+    .join(" ");
 }
 
 /** Configuration returned by the `SessionManager` factory for each new session. */
@@ -67,7 +83,7 @@ export interface Session<TCtx> {
   cwd?: string;
   enableFileCheckpointing?: boolean;
   context: TCtx;
-  pushMessage(text: string): void;
+  pushMessage(content: UserMessageContent): void;
   messageIterator: Query;
   permissionGate: PermissionGate;
   abort(): void;
@@ -279,11 +295,11 @@ export class SessionManager<TCtx> {
       enableFileCheckpointing: !!init.enableFileCheckpointing,
       context: init.context,
       replayGate: !!extraQueryOptions?.resume,
-      pushMessage: (text: string) => {
+      pushMessage: (content: UserMessageContent) => {
         session.replayGate = false;
         session.lastActivityAt = Date.now();
-        if (!session.firstPrompt) session.firstPrompt = text;
-        channel.push(userMessage(text));
+        if (!session.firstPrompt) session.firstPrompt = extractText(content);
+        channel.push(userMessage(content));
       },
       messageIterator,
       permissionGate,

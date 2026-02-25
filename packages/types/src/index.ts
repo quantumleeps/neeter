@@ -30,6 +30,29 @@ export interface SessionHistoryEntry {
   lastActivityAt: number;
 }
 
+// --- Content Blocks (multimodal messages) ---
+
+export interface TextBlock {
+  type: "text";
+  text: string;
+}
+
+export interface Base64ImageSource {
+  type: "base64";
+  media_type: "image/jpeg" | "image/png" | "image/gif" | "image/webp";
+  data: string;
+}
+
+export interface ImageBlock {
+  type: "image";
+  source: Base64ImageSource;
+}
+
+export type ContentBlock = TextBlock | ImageBlock;
+
+/** Content for a user message — plain string or array of text/image blocks. */
+export type UserMessageContent = string | ContentBlock[];
+
 // --- Chat Store ---
 
 export type ToolCallPhase = "pending" | "streaming_input" | "running" | "complete" | "error";
