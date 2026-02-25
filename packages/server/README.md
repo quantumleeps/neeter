@@ -66,7 +66,7 @@ Send images alongside text via the messages endpoint:
 }
 ```
 
-Plain `{ "text": "..." }` payloads continue to work as before. See the [Server Guide](https://github.com/quantumleeps/neeter/blob/main/docs/server.md#multimodal-messages) for details.
+Plain `{ "text": "..." }` payloads continue to work as before. See the [Server Guide](https://quantumleeps.github.io/neeter/docs/server#multimodal-messages) for details.
 
 ## Examples
 
@@ -77,8 +77,8 @@ Plain `{ "text": "..." }` payloads continue to work as before. See the [Server G
 
 ## Documentation
 
-- [Server Guide](https://github.com/quantumleeps/neeter/blob/main/docs/server.md) — endpoints, permissions, persistence, session context, sandbox hooks
-- [API Reference](https://github.com/quantumleeps/neeter/blob/main/docs/api-reference.md) — all exports and types
+- [Server Guide](https://quantumleeps.github.io/neeter/docs/server) — endpoints, permissions, persistence, session context, sandbox hooks
+- [API Reference](https://quantumleeps.github.io/neeter/docs/api-reference) — all exports and types
 
 ## License
 

@@ -3,13 +3,15 @@
 [![CI](https://github.com/quantumleeps/neeter/actions/workflows/ci.yml/badge.svg)](https://github.com/quantumleeps/neeter/actions/workflows/ci.yml)
 [![npm @neeter/server](https://img.shields.io/npm/v/@neeter/server?label=%40neeter%2Fserver)](https://www.npmjs.com/package/@neeter/server)
 [![npm @neeter/react](https://img.shields.io/npm/v/@neeter/react?label=%40neeter%2Freact)](https://www.npmjs.com/package/@neeter/react)
+[![npm @neeter/types](https://img.shields.io/npm/v/@neeter/types?label=%40neeter%2Ftypes)](https://www.npmjs.com/package/@neeter/types)
 [![license](https://img.shields.io/npm/l/@neeter/server)](./LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue)](https://www.typescriptlang.org/)
+[![docs](https://img.shields.io/badge/docs-quantumleeps.github.io%2Fneeter-blue)](https://quantumleeps.github.io/neeter/docs)
 
 A React + Hono toolkit that puts a browser UI on the [Claude Agent SDK](https://github.com/anthropics/claude-agent-sdk) — the same agentic framework that powers Claude Code. Streams tool calls, file edits, permissions, and multi-turn sessions over SSE into ready-made React components.
 
 <p align="center">
-  <img src="docs/assets/hero.png" alt="A multi-turn conversation with streaming tool calls, built with neeter" width="600" />
+  <img src="apps/docs/public/images/hero.png" alt="A multi-turn conversation with streaming tool calls, built with neeter" width="600" />
 </p>
 
 ## Why neeter
@@ -89,7 +91,7 @@ app.route("/", createAgentRouter({ sessions, translator }));
 serve({ fetch: app.fetch, port: 3000 });
 ```
 
-> Endpoints, session context, permissions, extended thinking, persistence, and sandbox hooks are covered in the [Server Guide](docs/server.md).
+> Endpoints, session context, permissions, extended thinking, persistence, and sandbox hooks are covered in the [Server Guide](https://quantumleeps.github.io/neeter/docs/server).
 
 ### Client
 
@@ -118,7 +120,7 @@ function Chat() {
 
 Components use Tailwind utility classes and accept `className` for overrides.
 
-> Styling, custom events, widgets, and the SSE protocol are covered in the [Client Guide](docs/client.md).
+> Styling, custom events, widgets, and the SSE protocol are covered in the [Client Guide](https://quantumleeps.github.io/neeter/docs/client).
 
 ## Examples
 
@@ -131,12 +133,12 @@ Components use Tailwind utility classes and accept `className` for overrides.
 
 | Guide | What it covers |
 |-------|----------------|
-| [Server Guide](docs/server.md) | Endpoints, session context, permissions, thinking, persistence, sandbox |
-| [Client Guide](docs/client.md) | Styling, custom events, widgets, tool lifecycle, SSE protocol |
-| [Built-in Widgets](docs/built-in-widgets.md) | The 11 SDK tool widgets and how to override them |
-| [Custom Widgets](docs/custom-widgets.md) | Registering your own tool widgets |
-| [API Reference](docs/api-reference.md) | All exports and types for server, react, and types packages |
-| [Development](docs/development.md) | Local setup, pre-commit hooks, CI |
+| [Server Guide](https://quantumleeps.github.io/neeter/docs/server) | Endpoints, session context, permissions, thinking, persistence, sandbox |
+| [Client Guide](https://quantumleeps.github.io/neeter/docs/client) | Styling, custom events, widgets, tool lifecycle, SSE protocol |
+| [Built-in Widgets](https://quantumleeps.github.io/neeter/docs/built-in-widgets) | The 11 SDK tool widgets and how to override them |
+| [Custom Widgets](https://quantumleeps.github.io/neeter/docs/custom-widgets) | Registering your own tool widgets |
+| [API Reference](https://quantumleeps.github.io/neeter/docs/api-reference) | All exports and types for server, react, and types packages |
+| [Development](https://quantumleeps.github.io/neeter/docs/development) | Local setup, pre-commit hooks, CI |
 
 ## License
 

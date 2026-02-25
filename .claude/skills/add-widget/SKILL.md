@@ -167,8 +167,8 @@ Same as custom widget steps 5–8.
 - [Skills guide](https://platform.claude.com/docs/en/agent-sdk/skills) — SKILL.md structure, `settingSources`, discovery
 
 ### neeter documentation
-- `docs/custom-widgets.md` — end-to-end tutorial, API reference
-- `docs/built-in-widgets.md` — all built-in widgets, override pattern, widget anatomy
+- `apps/docs/content/docs/custom-widgets.mdx` ([online](https://quantumleeps.github.io/neeter/docs/custom-widgets)) — end-to-end tutorial, API reference
+- `apps/docs/content/docs/built-in-widgets.mdx` ([online](https://quantumleeps.github.io/neeter/docs/built-in-widgets)) — all built-in widgets, override pattern, widget anatomy
 
 ## When something goes wrong
 

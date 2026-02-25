@@ -73,10 +73,10 @@ Without shadcn, import the bundled theme:
 
 ## Documentation
 
-- [Client Guide](https://github.com/quantumleeps/neeter/blob/main/docs/client.md) — styling, custom events, widgets, tool lifecycle
-- [API Reference](https://github.com/quantumleeps/neeter/blob/main/docs/api-reference.md) — all exports and types
-- [Built-in Widgets](https://github.com/quantumleeps/neeter/blob/main/docs/built-in-widgets.md)
-- [Custom Widgets](https://github.com/quantumleeps/neeter/blob/main/docs/custom-widgets.md)
+- [Client Guide](https://quantumleeps.github.io/neeter/docs/client) — styling, custom events, widgets, tool lifecycle
+- [API Reference](https://quantumleeps.github.io/neeter/docs/api-reference) — all exports and types
+- [Built-in Widgets](https://quantumleeps.github.io/neeter/docs/built-in-widgets)
+- [Custom Widgets](https://quantumleeps.github.io/neeter/docs/custom-widgets)
 
 ## License
 
