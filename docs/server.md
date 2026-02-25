@@ -19,6 +19,30 @@
 | `POST` | `/api/sessions/:id/permissions` | Respond to a permission request (see [Permissions](#permissions)) |
 | `POST` | `/api/sessions/:id/abort` | Abort the current agent turn |
 
+## System prompt
+
+`systemPrompt` accepts a plain string or the Claude Code preset object. The preset includes built-in safety instructions, tool-usage guidance, and environment context — use `append` to layer on your own instructions:
+
+```typescript
+// Plain string — full control, no built-in behavior
+const sessions = new SessionManager(() => ({
+  context: {},
+  model: "claude-sonnet-4-5-20250929",
+  systemPrompt: "You are a helpful assistant.",
+}));
+
+// Preset — Claude Code defaults + your additions
+const sessions = new SessionManager(() => ({
+  context: {},
+  model: "claude-sonnet-4-5-20250929",
+  systemPrompt: {
+    type: "preset",
+    preset: "claude_code",
+    append: "You are a helpful assistant that can look up Pokémon.",
+  },
+}));
+```
+
 ## Extended thinking
 
 Enable Claude's chain-of-thought reasoning by setting `thinking` in your session config:

@@ -26,7 +26,7 @@ export interface SessionInit<TCtx> {
   context: TCtx;
   /** Claude model ID (e.g. `"claude-sonnet-4-5-20250929"`). */
   model: string;
-  systemPrompt: string;
+  systemPrompt: string | { type: "preset"; preset: "claude_code"; append?: string };
   /** MCP servers keyed by name — the name becomes the middle segment of tool names (`mcp__{name}__{tool}`). */
   mcpServers?: Record<string, McpServerConfig>;
   tools?: string[] | { type: "preset"; preset: "claude_code" };

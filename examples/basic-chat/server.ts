@@ -9,7 +9,11 @@ delete process.env.CLAUDECODE;
 const sessions = new SessionManager(() => ({
   context: {},
   model: "claude-sonnet-4-20250514",
-  systemPrompt: "You are a helpful assistant that can look up Pokémon.",
+  systemPrompt: {
+    type: "preset",
+    preset: "claude_code",
+    append: "You are a helpful assistant that can look up Pokémon.",
+  },
   mcpServers: { pokemon: createPokemonServer() },
   allowedTools: ["mcp__pokemon__*"],
 }));

@@ -17,7 +17,7 @@ function createManager(
   factory?: (original?: { context: { n: number } }) => {
     context: { n: number };
     model: string;
-    systemPrompt: string;
+    systemPrompt: string | { type: "preset"; preset: "claude_code"; append?: string };
   },
 ) {
   return new SessionManager<{ n: number }>(
