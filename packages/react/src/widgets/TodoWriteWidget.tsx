@@ -42,7 +42,7 @@ function TodoList({ todos }: { todos: TodoItem[] }) {
                   : "text-muted-foreground"
             }
           >
-            {todo.content}
+            {todo.status === "in_progress" && todo.activeForm ? todo.activeForm : todo.content}
           </span>
         </div>
       ))}
