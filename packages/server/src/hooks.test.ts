@@ -86,6 +86,63 @@ describe("createSandboxHook", () => {
     expect(result).toEqual({});
   });
 
+  it("blocks Glob pattern with absolute path outside sandbox", async () => {
+    const result = await hook(preToolUseInput({ pattern: "/etc/**/*.txt" }, "Glob"), "tool-1", {
+      signal: AbortSignal.timeout(5000),
+    });
+    expect(result).toEqual({
+      hookSpecificOutput: {
+        hookEventName: "PreToolUse",
+        permissionDecision: "deny",
+        permissionDecisionReason: "Access outside sandbox directory is not allowed",
+      },
+    });
+  });
+
+  it("blocks Glob pattern with .. traversal", async () => {
+    const result = await hook(preToolUseInput({ pattern: "../../**/*.jsx" }, "Glob"), "tool-1", {
+      signal: AbortSignal.timeout(5000),
+    });
+    expect(result).toEqual({
+      hookSpecificOutput: {
+        hookEventName: "PreToolUse",
+        permissionDecision: "deny",
+        permissionDecisionReason: "Access outside sandbox directory is not allowed",
+      },
+    });
+  });
+
+  it("allows Glob pattern inside sandbox", async () => {
+    const result = await hook(
+      preToolUseInput({ pattern: `${sandboxDir}/**/*.html` }, "Glob"),
+      "tool-1",
+      { signal: AbortSignal.timeout(5000) },
+    );
+    expect(result).toEqual({});
+  });
+
+  it("allows Glob with relative pattern (no traversal)", async () => {
+    const result = await hook(preToolUseInput({ pattern: "**/*.jsx" }, "Glob"), "tool-1", {
+      signal: AbortSignal.timeout(5000),
+    });
+    expect(result).toEqual({});
+  });
+
+  it("blocks notebook_path outside sandbox", async () => {
+    const result = await hook(
+      preToolUseInput({ notebook_path: "/home/user/notebook.ipynb" }, "NotebookEdit"),
+      "tool-1",
+      { signal: AbortSignal.timeout(5000) },
+    );
+    expect(result).toEqual({
+      hookSpecificOutput: {
+        hookEventName: "PreToolUse",
+        permissionDecision: "deny",
+        permissionDecisionReason: "Access outside sandbox directory is not allowed",
+      },
+    });
+  });
+
   it("checks the path field (used by Glob/Grep)", async () => {
     const result = await hook(
       preToolUseInput({ path: "/home/user/secrets", pattern: "*.txt" }),

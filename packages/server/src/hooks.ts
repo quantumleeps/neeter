@@ -66,18 +66,50 @@ export function createSandboxHook(
           }
 
           const toolInput = preInput.tool_input as Record<string, unknown>;
-          const filePath = (toolInput.file_path ?? toolInput.path) as string | undefined;
-          if (!filePath) return {};
-          const resolved = resolvePath(filePath);
-          if (resolved !== normalizedDir && !resolved.startsWith(`${normalizedDir}/`)) {
-            return {
-              hookSpecificOutput: {
-                hookEventName: input.hook_event_name,
-                permissionDecision: "deny",
-                permissionDecisionReason: "Access outside sandbox directory is not allowed",
-              },
-            };
+
+          // Collect all path-like fields from tool input.
+          // - file_path: Read, Write, Edit
+          // - path: Glob (search directory), Grep (search directory)
+          // - notebook_path: NotebookEdit
+          const pathFields = ["file_path", "path", "notebook_path"] as const;
+          for (const field of pathFields) {
+            const value = toolInput[field] as string | undefined;
+            if (!value) continue;
+            const resolved = resolvePath(value);
+            if (resolved !== normalizedDir && !resolved.startsWith(`${normalizedDir}/`)) {
+              return {
+                hookSpecificOutput: {
+                  hookEventName: input.hook_event_name,
+                  permissionDecision: "deny",
+                  permissionDecisionReason: "Access outside sandbox directory is not allowed",
+                },
+              };
+            }
           }
+
+          // Glob's `pattern` can embed absolute paths or ".." traversals
+          // (e.g. "/etc/**" or "../../**/*.jsx"). Extract the non-glob prefix
+          // and validate it stays within the sandbox.
+          if (preInput.tool_name === "Glob") {
+            const pattern = toolInput.pattern as string | undefined;
+            if (pattern) {
+              const prefixMatch = pattern.match(/^([^*?{[]*)\//);
+              const prefix = prefixMatch ? prefixMatch[1] : pattern;
+              if (prefix.startsWith("/") || prefix.startsWith("..")) {
+                const resolved = resolvePath(prefix);
+                if (resolved !== normalizedDir && !resolved.startsWith(`${normalizedDir}/`)) {
+                  return {
+                    hookSpecificOutput: {
+                      hookEventName: input.hook_event_name,
+                      permissionDecision: "deny",
+                      permissionDecisionReason: "Access outside sandbox directory is not allowed",
+                    },
+                  };
+                }
+              }
+            }
+          }
+
           return {};
         },
       ],
