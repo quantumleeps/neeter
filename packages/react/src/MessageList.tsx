@@ -62,9 +62,7 @@ export function MessageList({
                     onFilesRewound={onFilesRewound}
                   />
                 )}
-                <div className="flex justify-end">
-                  <TextMessage role="user" content={msg.content} />
-                </div>
+                <TextMessage role="user" content={msg.content} />
               </div>
             );
           }
