@@ -40,6 +40,16 @@ If gitleaks isn't installed, the hook skips gracefully — all other hooks still
 | **merge-conflict** | Catch leftover conflict markers |
 | **pii-check** | Scan for SSNs, phone numbers, and email addresses |
 
+## Ship workflow
+
+neeter includes a `ship` [Claude Code skill](https://code.claude.com/docs/en/skills) in `.claude/skills/` that automates the full contribution lifecycle — branching, verification, committing, PR creation, merge, version bump, and tagging:
+
+```
+/ship
+```
+
+The skill walks through each step with approval checkpoints for the commit message, PR body, merge timing, and version bump. See [`.claude/skills/ship/SKILL.md`](https://github.com/quantumleeps/neeter/blob/main/.claude/skills/ship/SKILL.md) for the full sequence, or follow it manually when not using Claude Code.
+
 ## CI
 
 Pull requests to `main` run lint, build, and test via GitHub Actions. See `.github/workflows/ci.yml`.

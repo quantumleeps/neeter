@@ -3,7 +3,11 @@ title: Introduction
 description: A React + Hono toolkit that puts a browser UI on the Claude Agent SDK — the same agentic framework that powers Claude Code. Streams tool calls, file edits, permissions, and multi-turn sessions over SSE into ready-made React components.
 ---
 
-<Img src="/images/hero.png" alt="A multi-turn conversation with streaming tool calls, built with neeter" width={600} />
+*The same agentic loop that powers Claude Code — now in your browser.*
+
+<Video src="/videos/chess-duel.mp4" autoPlay loop muted playsInline />
+
+Two Claude agents playing chess — with custom move widgets, extended thinking, and a live board. Built with neeter.
 
 ## Why neeter
 
@@ -16,6 +20,19 @@ The Claude Agent SDK gives you a powerful agentic loop — but it's a server-sid
 - **Browser-side tool approval** — The SDK's `canUseTool` callback fires on the server, but your users are in the browser. `PermissionGate` bridges the gap with deferred promises, SSE events, and an HTTP POST endpoint — the agent blocks until the user clicks Allow/Deny or answers a clarifying question.
 - **Session resume & persistence** — The SDK persists conversations on disk. `SessionManager` captures the SDK session ID, exposes `resume()` for continuing past conversations, and accepts a pluggable `SessionStore` for persisting event history across server restarts. The built-in `createJsonSessionStore` writes append-only JSONL files; on resume, `replayEvents` reconstructs the UI from stored events.
 - **Client-server separation** — Server handles transport (SSE encoding, session routing). Client handles state (Zustand store, React components). The translator is the clean seam between them.
+
+## Built-in widgets
+
+11 purpose-built React components for every SDK tool — streaming in real time with approval gates, loading states, and rich formatting.
+
+| | | |
+|:---:|:---:|:---:|
+| <Img src="/images/edit-diff.png" alt="Edit widget showing red/green diff" /> | <Img src="/images/websearch.png" alt="WebSearch widget with favicon pills" /> | <Img src="/images/bash-widget.png" alt="Bash widget" /> |
+| **Edit** — red/green diffs | **WebSearch** — favicon pills | **Bash** — command + output |
+| <Img src="/images/todowrite-widget.png" alt="TodoWrite widget" /> | <Img src="/images/thinking.png" alt="Thinking block" /> | <Img src="/images/permission-card.png" alt="Permission card" /> |
+| **TodoWrite** — progress checklist | **Thinking** — extended reasoning | **Approval** — Allow/Deny gates |
+
+See all 11 widgets in the [Built-in Widgets guide](/docs/built-in-widgets).
 
 ## Install
 
@@ -108,6 +125,12 @@ function Chat() {
 ```
 
 Components use Tailwind utility classes and accept `className` for overrides.
+
+## What you can build
+
+<Img src="/images/code-workbench.png" alt="Code workbench — split-pane coding assistant with live preview" />
+
+The spirograph studio above was built by Opus 4.6 using the [code-workbench](https://github.com/quantumleeps/neeter/tree/main/examples/code-workbench) example — a split-pane coding assistant with live preview, per-session sandboxes, file checkpointing, and session resume.
 
 ## Examples
 

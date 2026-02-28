@@ -8,23 +8,40 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue)](https://www.typescriptlang.org/)
 [![docs](https://img.shields.io/badge/docs-quantumleeps.github.io%2Fneeter-blue)](https://quantumleeps.github.io/neeter/docs)
 
-A React + Hono toolkit that puts a browser UI on the [Claude Agent SDK](https://github.com/anthropics/claude-agent-sdk) — the same agentic framework that powers Claude Code. Streams tool calls, file edits, permissions, and multi-turn sessions over SSE into ready-made React components.
+The same agentic loop that powers Claude Code — now in your browser. A React + Hono toolkit that streams tool calls, file edits, permissions, and multi-turn sessions over SSE into ready-made React components.
 
 <p align="center">
-  <img src="apps/docs/public/images/hero.png" alt="A multi-turn conversation with streaming tool calls, built with neeter" width="600" />
+  <img src="apps/docs/public/images/hero.png" alt="neeter code workbench — agent builds a weather dashboard with streaming tool calls, diffs, and live preview" />
 </p>
 
 ## Why neeter
 
 The Claude Agent SDK gives you a powerful agentic loop — but it's a server-side `AsyncGenerator` with no opinion on how to get those events to a browser. neeter bridges that gap:
 
-- **Multi-turn persistent sessions** — `PushChannel` + `SessionManager` let users send messages at any time. Messages queue and the SDK picks them up when ready — no "wait for the agent to finish" lockout.
-- **Named SSE event routing** — The SDK yields a flat stream of internal message types. The `MessageTranslator` reshapes them into semantically named SSE events (`text_delta`, `tool_start`, `tool_call`, `tool_result`, ...) that the browser's `EventSource` can route with native `addEventListener`.
-- **UI-friendly tool lifecycle** — Tool calls move through `pending` → `streaming_input` → `running` → `complete` phases with streaming JSON input, giving your UI fine-grained control over loading states and progressive rendering.
-- **Structured custom events** — Hook into tool results with `onToolResult` and emit typed `{ name, value }` events for app-specific reactivity (e.g. "document saved", "data refreshed") without touching the core protocol.
-- **Browser-side tool approval** — The SDK's `canUseTool` callback fires on the server, but your users are in the browser. `PermissionGate` bridges the gap with deferred promises, SSE events, and an HTTP POST endpoint — the agent blocks until the user clicks Allow/Deny or answers a clarifying question.
-- **Session resume & persistence** — The SDK persists conversations on disk. `SessionManager` captures the SDK session ID, exposes `resume()` for continuing past conversations, and accepts a pluggable `SessionStore` for persisting event history across server restarts. The built-in `createJsonSessionStore` writes append-only JSONL files; on resume, `replayEvents` reconstructs the UI from stored events.
-- **Client-server separation** — Server handles transport (SSE encoding, session routing). Client handles state (Zustand store, React components). The translator is the clean seam between them.
+| Feature | What it does |
+|---------|-------------|
+| **Multi-turn sessions** | `PushChannel` + `SessionManager` let users send messages at any time — no "wait for the agent to finish" lockout |
+| **Named SSE events** | `MessageTranslator` reshapes the SDK's flat stream into semantic events (`text_delta`, `tool_start`, `tool_call`, `tool_result`, ...) that `EventSource` can route natively |
+| **Tool lifecycle** | Tool calls move through `pending` → `streaming_input` → `running` → `complete` with streaming JSON input for progressive rendering |
+| **Custom events** | Hook into tool results with `onToolResult` and emit typed `{ name, value }` events for app-specific reactivity |
+| **Browser-side approval** | `PermissionGate` bridges the SDK's server-side `canUseTool` callback to the browser — the agent blocks until the user clicks Allow/Deny |
+| **Session persistence** | Resume past conversations with pluggable `SessionStore`. Built-in JSONL store with `replayEvents` for UI reconstruction |
+| **11 built-in widgets** | Purpose-built React components for every SDK tool — diffs, bash output, web search, todos, and more |
+
+## Built-in widgets
+
+<p align="center">
+  <img src="apps/docs/public/images/edit-diff.png" alt="Edit widget showing red/green diff with Allow/Deny approval" width="270" />
+  <img src="apps/docs/public/images/websearch.png" alt="WebSearch widget with favicon pills" width="270" />
+  <img src="apps/docs/public/images/bash-widget.png" alt="Bash widget showing command output" width="270" />
+</p>
+<p align="center">
+  <img src="apps/docs/public/images/todowrite-widget.png" alt="TodoWrite widget with progress checklist" width="270" />
+  <img src="apps/docs/public/images/thinking.png" alt="Extended thinking block" width="270" />
+  <img src="apps/docs/public/images/permission-card.png" alt="Permission approval card with Allow/Deny" width="270" />
+</p>
+
+Edit diffs, web search with favicon pills, bash output, todo checklists, extended thinking, and tool approval — all streaming in real time. See the [full widget docs](https://quantumleeps.github.io/neeter/docs/built-in-widgets).
 
 ## Install
 
@@ -121,6 +138,14 @@ function Chat() {
 Components use Tailwind utility classes and accept `className` for overrides.
 
 > Styling, custom events, widgets, and the SSE protocol are covered in the [Client Guide](https://quantumleeps.github.io/neeter/docs/client).
+
+## What you can build
+
+<p align="center">
+  <img src="apps/docs/public/images/code-workbench.png" alt="Code workbench — split-pane coding assistant with live preview" />
+</p>
+
+The spirograph studio above was built by Opus 4.6 using the [code-workbench](examples/code-workbench) example — a split-pane coding assistant with live preview, per-session sandboxes, file checkpointing, and session resume.
 
 ## Examples
 
