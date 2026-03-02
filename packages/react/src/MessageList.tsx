@@ -1,7 +1,7 @@
+import { cn } from "@neeter/core";
 import type { RewindFilesResult } from "@neeter/types";
 import { useEffect, useRef } from "react";
 import { useChatStore } from "./AgentProvider.js";
-import { cn } from "./cn.js";
 import { PendingPermissions } from "./PendingPermissions.js";
 import { RollbackButton } from "./RollbackButton.js";
 import { TextMessage } from "./TextMessage.js";

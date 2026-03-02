@@ -1,4 +1,4 @@
-import { cn } from "./cn.js";
+import { cn } from "@neeter/core";
 
 export function ThinkingIndicator({ className }: { className?: string }) {
   return (

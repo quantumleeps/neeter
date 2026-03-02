@@ -1,5 +1,5 @@
+import { cn } from "@neeter/core";
 import { useEffect, useRef } from "react";
-import { cn } from "./cn.js";
 
 export function ApprovalButtons({
   onApprove,

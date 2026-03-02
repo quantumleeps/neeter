@@ -1,6 +1,5 @@
+import { cn, isApprovalClaimedByToolCall } from "@neeter/core";
 import { useAgentContext, useChatStore } from "./AgentProvider.js";
-import { isApprovalClaimedByToolCall } from "./approval-matching.js";
-import { cn } from "./cn.js";
 import { ToolApprovalCard } from "./ToolApprovalCard.js";
 import { UserQuestionCard } from "./UserQuestionCard.js";
 

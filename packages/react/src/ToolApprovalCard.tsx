@@ -1,8 +1,8 @@
+import { cn, getWidget, stripMcpPrefix } from "@neeter/core";
 import type { ToolApprovalRequest } from "@neeter/types";
 import { ApprovalButtons } from "./ApprovalButtons.js";
-import { cn } from "./cn.js";
-import { getWidget, stripMcpPrefix } from "./registry.js";
 import { PulsingDot } from "./StatusDot.js";
+import type { WidgetRegistration } from "./types.js";
 
 export function ToolApprovalCard({
   request,
@@ -15,7 +15,7 @@ export function ToolApprovalCard({
   onDeny: (message?: string) => void;
   className?: string;
 }) {
-  const reg = getWidget(stripMcpPrefix(request.toolName));
+  const reg = getWidget(stripMcpPrefix(request.toolName)) as WidgetRegistration | undefined;
   const label = reg?.label ?? request.toolName;
   const InputRenderer = reg?.inputRenderer;
 

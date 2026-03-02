@@ -2,7 +2,7 @@
   "private": true,
   "packageManager": "pnpm@10.22.0",
   "scripts": {
-    "build": "tsc --build packages/types packages/server packages/react",
+    "build": "tsc --build packages/types packages/core packages/server packages/react",
     "check": "biome check packages/*/src/",
     "prepare": "lefthook install",
     "test": "vitest run",

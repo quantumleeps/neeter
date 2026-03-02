@@ -1,5 +1,5 @@
+import { cn } from "@neeter/core";
 import { type KeyboardEvent, useCallback, useRef, useState } from "react";
-import { cn } from "./cn.js";
 import { SendIcon, StopIcon } from "./icons.js";
 
 export function ChatInput({
