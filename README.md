@@ -51,7 +51,7 @@ Edit diffs, web search with favicon pills, bash output, todo checklists, extende
 pnpm add @neeter/server
 
 # Client
-pnpm add @neeter/core @neeter/react
+pnpm add @neeter/react
 ```
 
 Peer dependencies — **server**:

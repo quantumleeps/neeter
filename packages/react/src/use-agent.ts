@@ -51,7 +51,9 @@ export function useAgent(store: ChatStore, config?: UseAgentConfig): UseAgentRet
     client.onHistoryChange = setSessionHistory;
     clientRef.current = client;
 
-    client.connect(resumeSessionId);
+    client.connect(resumeSessionId).catch(() => {
+      // Error already surfaced via store.addSystemMessage in AgentClient.connect
+    });
 
     return () => {
       client.destroy();

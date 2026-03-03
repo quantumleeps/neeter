@@ -42,7 +42,7 @@ Framework-agnostic state management, agent lifecycle, and utilities. Use standal
 | `getWidget(toolName)` | Look up a registered widget |
 | `stripMcpPrefix(name)` | `"mcp__server__tool"` → `"tool"` |
 | `findMatchingApproval(request, toolCall)` | Find approval request matching a tool call |
-| `isApprovalClaimedByToolCall(request, toolCall)` | Check if approval is claimed by tool call |
+| `isApprovalClaimedByToolCall(request, messages)` | Check if approval is claimed by any non-terminal tool call in a `ChatMessage[]` |
 | `cn(...inputs)` | `clsx` + `tailwind-merge` utility for class merging |
 
 ## `@neeter/react`
@@ -52,7 +52,7 @@ React-specific hooks, components, and widgets. Re-exports all `@neeter/core` uti
 | Export | Description |
 |--------|-------------|
 | `AgentProvider` | Context provider — wraps store + SSE connection. Props: `endpoint`, `resumeSessionId`, `onCustomEvent` |
-| `useAgentContext()` | Returns `{ sessionId, sdkSessionId, sessionHistory, sendMessage, stopSession, respondToPermission, resumeSession, newSession, refreshHistory }` |
+| `useAgentContext()` | Returns `{ sessionId, sdkSessionId, sessionHistory, sendMessage, stopSession, respondToPermission, resumeSession, rewindSession, newSession, refreshHistory, store }` |
 | `useChatStore(selector)` | Zustand selector hook into chat state |
 | `useAgent(store, config?)` | SSE connection hook (used internally by `AgentProvider`). Config: `endpoint`, `resumeSessionId`, `onCustomEvent` |
 | `MessageList` | Auto-scrolling message list with pending permissions and thinking indicator |
@@ -60,12 +60,12 @@ React-specific hooks, components, and widgets. Re-exports all `@neeter/core` uti
 | `ChatInput` | Textarea + send/stop button (accepts `onStop`, `isStreaming`) |
 | `ToolCallCard` | Lifecycle-aware tool call display with inline approval |
 | `PendingPermissions` | Renders pending tool approval and user question cards |
+| `RollbackButton` | Button that triggers file checkpoint rollback for a given message |
 | `ToolApprovalCard` | Tool approval card with Allow/Deny buttons |
 | `UserQuestionCard` | Structured question card with option selection |
 | `ThinkingBlock` | Collapsible card displaying extended thinking text |
 | `ThinkingIndicator` | Animated dots shown while agent is generating |
 | `CollapsibleCard` | Expandable card wrapper |
-| `StopIcon` | Square stop icon SVG component |
 | `StatusDot` | Phase-colored status indicator |
 | `cn(...inputs)` | `clsx` + `tailwind-merge` utility for class merging |
 | `registerWidget(registration)` | Register a component for a tool name |

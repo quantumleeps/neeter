@@ -29,7 +29,7 @@ const mockFetch = vi.fn(async (url: string | URL | Request, opts?: RequestInit) 
   if ((url as string).includes("/sessions/replay/")) {
     return { ok: true, json: async () => fetchReplayResponse } as Response;
   }
-  return { json: async () => ({ sessionId: fetchSessionId }) } as Response;
+  return { ok: true, json: async () => ({ sessionId: fetchSessionId }) } as Response;
 });
 
 class MockEventSource {

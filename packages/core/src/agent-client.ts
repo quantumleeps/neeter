@@ -39,6 +39,38 @@ export class AgentClient {
 
   onHistoryChange?: (history: SessionHistoryEntry[]) => void;
 
+  // biome-ignore lint/suspicious/noExplicitAny: mirrors JSON.parse return type
+  private parseEvent(e: MessageEvent): any {
+    try {
+      return JSON.parse(e.data);
+    } catch {
+      console.warn("[neeter] malformed SSE event:", e.type);
+      return null;
+    }
+  }
+
+  private formatError(err: unknown): string {
+    return err instanceof Error ? err.message : String(err);
+  }
+
+  private surfaceError(label: string, err: unknown): void {
+    this.store.getState().addSystemMessage(`Failed to ${label}: ${this.formatError(err)}`);
+  }
+
+  private async fetchOk(url: string, init?: RequestInit, label?: string): Promise<Response> {
+    const res = await fetch(url, init);
+    if (!res.ok) {
+      throw new Error(`${label ?? "Request"} failed with status ${res.status}`);
+    }
+    return res;
+  }
+
+  // biome-ignore lint/suspicious/noExplicitAny: wraps fetch + JSON parsing
+  private async fetchJson(url: string, init?: RequestInit, label?: string): Promise<any> {
+    const res = await this.fetchOk(url, init, label);
+    return res.json();
+  }
+
   constructor(store: ChatStore, config?: AgentClientConfig) {
     this.store = store;
     this.endpoint = config?.endpoint ?? "/api";
@@ -58,44 +90,55 @@ export class AgentClient {
   }
 
   /**
-   * Creates or resumes a session, then opens an EventSource for live events.
-   * Call once after construction. For subsequent sessions use `newSession()`
-   * or `resumeSession()`.
+   * Creates or resumes a session. Sets `sessionId` in the store on success.
+   * Callers must call `attachEventSource()` separately after the sessionId
+   * is set — in `@neeter/react` this happens via `useEffect`.
    */
   async connect(resumeSessionId?: string): Promise<void> {
     this.initCancelled = false;
     const target = resumeSessionId;
-    let res: Response;
 
-    if (target) {
-      try {
-        const eventsRes = await fetch(`${this.endpoint}/sessions/replay/${target}`);
-        if (eventsRes.ok && !this.initCancelled) {
-          const events: SSEEvent[] = await eventsRes.json();
-          replayEvents(this.store, events);
+    try {
+      if (target) {
+        try {
+          const eventsRes = await fetch(`${this.endpoint}/sessions/replay/${target}`);
+          if (eventsRes.ok && !this.initCancelled) {
+            const events: SSEEvent[] = await eventsRes.json();
+            replayEvents(this.store, events);
+          }
+        } catch (err) {
+          console.warn("[neeter] replay failed:", err);
         }
-      } catch {
-        /* replay is best-effort */
       }
-      res = await fetch(`${this.endpoint}/sessions/resume`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sdkSessionId: target }),
-      });
-    } else {
-      res = await fetch(`${this.endpoint}/sessions`, { method: "POST" });
-    }
 
-    const data = await res.json();
-    if (!this.initCancelled) {
-      this.store.getState().setSessionId(data.sessionId);
+      const data = target
+        ? await this.fetchJson(
+            `${this.endpoint}/sessions/resume`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ sdkSessionId: target }),
+            },
+            "Session request",
+          )
+        : await this.fetchJson(`${this.endpoint}/sessions`, { method: "POST" }, "Session request");
+
+      if (!data.sessionId) {
+        throw new Error("Server response missing sessionId");
+      }
+      if (!this.initCancelled) {
+        this.store.getState().setSessionId(data.sessionId);
+      }
+    } catch (err) {
+      this.surfaceError("connect", err);
+      throw err;
     }
   }
 
   /**
-   * Attaches an EventSource to the current sessionId and wires up all SSE
-   * event handlers. Called automatically when sessionId changes — only call
-   * directly if you need to re-attach after a manual close.
+   * Opens an EventSource for the current sessionId and wires up all SSE
+   * event handlers. In `@neeter/react` this is called via `useEffect` —
+   * standalone consumers must call it explicitly after `connect()`.
    */
   attachEventSource(): void {
     const sid = this.sessionId;
@@ -111,7 +154,9 @@ export class AgentClient {
     const s = this.store;
 
     es.addEventListener("session_init", (e) => {
-      const { sdkSessionId: id, mcpServers, fileCheckpointing } = JSON.parse(e.data);
+      const data = this.parseEvent(e);
+      if (!data) return;
+      const { sdkSessionId: id, mcpServers, fileCheckpointing } = data;
       s.getState().setSdkSessionId(id);
       if (mcpServers) s.getState().setMcpServers(mcpServers);
       if (fileCheckpointing) s.getState().setFileCheckpointing(true);
@@ -122,38 +167,45 @@ export class AgentClient {
     });
 
     es.addEventListener("thinking_delta", (e) => {
-      const { text } = JSON.parse(e.data);
-      s.getState().appendStreamingThinking(text);
+      const data = this.parseEvent(e);
+      if (!data) return;
+      s.getState().appendStreamingThinking(data.text);
     });
 
     es.addEventListener("text_delta", (e) => {
+      const data = this.parseEvent(e);
+      if (!data) return;
       s.getState().setThinking(false);
       s.getState().flushStreamingThinking();
-      const { text } = JSON.parse(e.data);
-      s.getState().appendStreamingText(text);
+      s.getState().appendStreamingText(data.text);
     });
 
     es.addEventListener("tool_start", (e) => {
+      const data = this.parseEvent(e);
+      if (!data) return;
       s.getState().setThinking(false);
       s.getState().flushStreamingThinking();
       s.getState().flushStreamingText();
-      const { id, name } = JSON.parse(e.data);
-      s.getState().startToolCall(id, name);
+      s.getState().startToolCall(data.id, data.name);
     });
 
     es.addEventListener("tool_input_delta", (e) => {
-      const { id, partialJson } = JSON.parse(e.data);
-      s.getState().appendToolInput(id, partialJson);
+      const data = this.parseEvent(e);
+      if (!data) return;
+      s.getState().appendToolInput(data.id, data.partialJson);
     });
 
     es.addEventListener("tool_call", (e) => {
+      const data = this.parseEvent(e);
+      if (!data) return;
       s.getState().flushStreamingText();
-      const { id, name, input } = JSON.parse(e.data);
-      s.getState().finalizeToolCall(id, name, input);
+      s.getState().finalizeToolCall(data.id, data.name, data.input);
     });
 
     es.addEventListener("tool_result", (e) => {
-      const { toolUseId, result, isError } = JSON.parse(e.data);
+      const data = this.parseEvent(e);
+      if (!data) return;
+      const { toolUseId, result, isError } = data;
       if (isError) {
         s.getState().errorToolCall(toolUseId, result);
       } else {
@@ -165,12 +217,15 @@ export class AgentClient {
     });
 
     es.addEventListener("permission_request", (e) => {
-      const request = JSON.parse(e.data) as PermissionRequest;
-      s.getState().addPermissionRequest(request);
+      const data = this.parseEvent(e);
+      if (!data) return;
+      s.getState().addPermissionRequest(data as PermissionRequest);
     });
 
     es.addEventListener("session_error", (e) => {
-      const { subtype, stopReason } = JSON.parse(e.data);
+      const data = this.parseEvent(e);
+      if (!data) return;
+      const { subtype, stopReason } = data;
       s.getState().flushStreamingThinking();
       s.getState().flushStreamingText();
       s.getState().setThinking(false);
@@ -186,7 +241,8 @@ export class AgentClient {
     });
 
     es.addEventListener("turn_complete", (e) => {
-      const data = JSON.parse(e.data);
+      const data = this.parseEvent(e);
+      if (!data) return;
       s.getState().flushStreamingThinking();
       s.getState().flushStreamingText();
       s.getState().setThinking(false);
@@ -225,14 +281,17 @@ export class AgentClient {
     });
 
     es.addEventListener("checkpoint", (e) => {
-      const { userMessageUuid } = JSON.parse(e.data);
-      s.getState().addCheckpoint(userMessageUuid);
+      const data = this.parseEvent(e);
+      if (!data) return;
+      s.getState().addCheckpoint(data.userMessageUuid);
     });
 
     if (this.onCustomEvent) {
       const handler = this.onCustomEvent;
       es.addEventListener("custom", (e) => {
-        handler(JSON.parse(e.data) as CustomEvent);
+        const data = this.parseEvent(e);
+        if (!data) return;
+        handler(data as CustomEvent);
       });
     }
   }
@@ -243,11 +302,21 @@ export class AgentClient {
     this.store.getState().addUserMessage(text);
     this.store.getState().setStreaming(true);
     this.store.getState().setThinking(true);
-    await fetch(`${this.endpoint}/sessions/${sid}/messages`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text }),
-    });
+    try {
+      await this.fetchOk(
+        `${this.endpoint}/sessions/${sid}/messages`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text }),
+        },
+        "Send message",
+      );
+    } catch (err) {
+      this.store.getState().setStreaming(false);
+      this.store.getState().setThinking(false);
+      this.surfaceError("send message", err);
+    }
   }
 
   async stopSession(): Promise<void> {
@@ -256,18 +325,34 @@ export class AgentClient {
     this.aborted = true;
     this.store.getState().setThinking(false);
     this.store.getState().setStreaming(false);
-    await fetch(`${this.endpoint}/sessions/${sid}/abort`, { method: "POST" });
+    try {
+      await this.fetchOk(
+        `${this.endpoint}/sessions/${sid}/abort`,
+        { method: "POST" },
+        "Stop session",
+      );
+    } catch (err) {
+      this.surfaceError("stop session", err);
+    }
   }
 
   async respondToPermission(response: PermissionResponse): Promise<void> {
     const sid = this.sessionId;
     if (!sid) return;
     this.store.getState().removePermissionRequest(response.requestId);
-    await fetch(`${this.endpoint}/sessions/${sid}/permissions`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(response),
-    });
+    try {
+      await this.fetchOk(
+        `${this.endpoint}/sessions/${sid}/permissions`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(response),
+        },
+        "Permission response",
+      );
+    } catch (err) {
+      this.surfaceError("send permission response", err);
+    }
   }
 
   async resumeSession(options?: ResumeOptions): Promise<void> {
@@ -279,42 +364,59 @@ export class AgentClient {
       this.eventSource = null;
     }
 
-    this.store.getState().reset();
-
+    let replayedEvents: SSEEvent[] = [];
     try {
       const eventsRes = await fetch(`${this.endpoint}/sessions/replay/${targetSdkSessionId}`);
       if (eventsRes.ok) {
-        const events: SSEEvent[] = await eventsRes.json();
-        replayEvents(this.store, events, {
+        replayedEvents = await eventsRes.json();
+      }
+    } catch (err) {
+      console.warn("[neeter] replay failed:", err);
+    }
+
+    try {
+      const data = await this.fetchJson(
+        `${this.endpoint}/sessions/resume`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            sdkSessionId: targetSdkSessionId,
+            forkSession: options?.fork,
+            resumeSessionAt: options?.resumeSessionAt,
+          }),
+        },
+        "Resume session",
+      );
+      this.store.getState().reset();
+      if (replayedEvents.length > 0) {
+        replayEvents(this.store, replayedEvents, {
           stopAtCheckpoint: options?.resumeSessionAt,
         });
       }
-    } catch {
-      /* replay is best-effort */
+      this.store.getState().setSessionId(data.sessionId);
+    } catch (err) {
+      this.surfaceError("resume session", err);
+      throw err;
     }
-
-    const res = await fetch(`${this.endpoint}/sessions/resume`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        sdkSessionId: targetSdkSessionId,
-        forkSession: options?.fork,
-        resumeSessionAt: options?.resumeSessionAt,
-      }),
-    });
-    const data = await res.json();
-    this.store.getState().setSessionId(data.sessionId);
   }
 
   async rewindSession(checkpointId: string, options?: RewindOptions): Promise<RewindFilesResult> {
     const sid = this.sessionId;
     if (!sid) return { canRewind: false, error: "No active session" };
-    const res = await fetch(`${this.endpoint}/sessions/${sid}/rewind`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userMessageId: checkpointId, dryRun: options?.dryRun }),
-    });
-    return res.json();
+    try {
+      return await this.fetchJson(
+        `${this.endpoint}/sessions/${sid}/rewind`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userMessageId: checkpointId, dryRun: options?.dryRun }),
+        },
+        "Rewind",
+      );
+    } catch (err) {
+      return { canRewind: false, error: this.formatError(err) };
+    }
   }
 
   async newSession(): Promise<void> {
@@ -323,11 +425,18 @@ export class AgentClient {
       this.eventSource = null;
     }
 
-    this.store.getState().reset();
-
-    const res = await fetch(`${this.endpoint}/sessions`, { method: "POST" });
-    const data = await res.json();
-    this.store.getState().setSessionId(data.sessionId);
+    try {
+      const data = await this.fetchJson(
+        `${this.endpoint}/sessions`,
+        { method: "POST" },
+        "New session",
+      );
+      this.store.getState().reset();
+      this.store.getState().setSessionId(data.sessionId);
+    } catch (err) {
+      this.surfaceError("create session", err);
+      throw err;
+    }
   }
 
   async refreshHistory(): Promise<SessionHistoryEntry[]> {
@@ -337,8 +446,8 @@ export class AgentClient {
         this._sessionHistory = await res.json();
         this.onHistoryChange?.(this._sessionHistory);
       }
-    } catch {
-      /* ignore */
+    } catch (err) {
+      console.warn("[neeter] history refresh failed:", err);
     }
     return this._sessionHistory;
   }
