@@ -1,6 +1,5 @@
+import { registerWidget, type WidgetProps } from "@neeter/core";
 import { useState } from "react";
-import { registerWidget } from "../registry.js";
-import type { WidgetProps } from "../types.js";
 
 interface SearchLink {
   title: string;

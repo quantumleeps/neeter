@@ -75,8 +75,8 @@ function findToolCall(messages: ChatMessage[], toolUseId: string): ToolCallInfo 
 }
 
 /**
- * Creates a vanilla Zustand store for chat state. `AgentProvider` creates one
- * internally — use this directly only for custom provider implementations.
+ * Creates a vanilla Zustand store for chat state. Framework wrappers create
+ * one internally — use this directly only for custom implementations.
  */
 export function createChatStore(): ChatStore {
   return createStore<ChatStoreShape>()(

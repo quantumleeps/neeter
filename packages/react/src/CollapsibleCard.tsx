@@ -1,6 +1,6 @@
+import { cn } from "@neeter/core";
 import type { ToolCallPhase } from "@neeter/types";
 import { type ReactNode, useState } from "react";
-import { cn } from "./cn.js";
 import { ChevronIcon } from "./icons.js";
 import { StatusDot } from "./StatusDot.js";
 

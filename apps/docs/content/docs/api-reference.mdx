@@ -1,6 +1,6 @@
 ---
 title: API Reference
-description: All exports and types for @neeter/server, @neeter/react, and @neeter/types
+description: All exports and types for @neeter/server, @neeter/core, @neeter/react, and @neeter/types
 ---
 
 For usage examples, see the [Server Guide](/docs/server) and [Client Guide](/docs/client).
@@ -26,27 +26,46 @@ For usage examples, see the [Server Guide](/docs/server) and [Client Guide](/doc
 | `createSandboxHook(dir, resolve)` | PreToolUse hook that blocks file operations outside a sandbox directory |
 | `streamSession(session, translator, onEvent?)` | Async generator yielding `SSEEvent`s, with optional persistence callback |
 
+## `@neeter/core`
+
+Framework-agnostic state management, agent lifecycle, and utilities. Use standalone for vanilla JS apps or as the foundation for `@neeter/react`.
+
+| Export | Description |
+|--------|-------------|
+| `AgentClient` | Framework-agnostic client managing EventSource lifecycle, session creation, resumption, and message sending |
+| `AgentClientConfig` | Constructor options — `endpoint`, `onCustomEvent` |
+| `ResumeOptions` | Options for resuming a session — `sdkSessionId`, `fork`, `resumeSessionAt` |
+| `RewindOptions` | Options for rewinding file checkpoints — `dryRun` |
+| `createChatStore()` | Creates a vanilla Zustand store |
+| `replayEvents(store, events, options?)` | Reconstruct chat store state from persisted `SSEEvent[]`. Pass `stopAtCheckpoint` to truncate at a checkpoint |
+| `registerWidget(registration)` | Register a component for a tool name |
+| `getWidget(toolName)` | Look up a registered widget |
+| `stripMcpPrefix(name)` | `"mcp__server__tool"` → `"tool"` |
+| `findMatchingApproval(request, toolCall)` | Find approval request matching a tool call |
+| `isApprovalClaimedByToolCall(request, messages)` | Check if approval is claimed by any non-terminal tool call in a `ChatMessage[]` |
+| `cn(...inputs)` | `clsx` + `tailwind-merge` utility for class merging |
+
 ## `@neeter/react`
+
+React-specific hooks, components, and widgets. Re-exports all `@neeter/core` utilities for convenience.
 
 | Export | Description |
 |--------|-------------|
 | `AgentProvider` | Context provider — wraps store + SSE connection. Props: `endpoint`, `resumeSessionId`, `onCustomEvent` |
-| `useAgentContext()` | Returns `{ sessionId, sdkSessionId, sessionHistory, sendMessage, stopSession, respondToPermission, resumeSession, newSession, refreshHistory }` |
+| `useAgentContext()` | Returns `{ sessionId, sdkSessionId, sessionHistory, sendMessage, stopSession, respondToPermission, resumeSession, rewindSession, newSession, refreshHistory, store }` |
 | `useChatStore(selector)` | Zustand selector hook into chat state |
-| `createChatStore()` | Creates a vanilla Zustand store (for advanced use) |
 | `useAgent(store, config?)` | SSE connection hook (used internally by `AgentProvider`). Config: `endpoint`, `resumeSessionId`, `onCustomEvent` |
-| `replayEvents(store, events, options?)` | Reconstruct chat store state from persisted `SSEEvent[]`. Pass `stopAtCheckpoint` to truncate at a checkpoint |
 | `MessageList` | Auto-scrolling message list with pending permissions and thinking indicator |
 | `TextMessage` | Markdown-rendered message bubble |
 | `ChatInput` | Textarea + send/stop button (accepts `onStop`, `isStreaming`) |
 | `ToolCallCard` | Lifecycle-aware tool call display with inline approval |
 | `PendingPermissions` | Renders pending tool approval and user question cards |
+| `RollbackButton` | Button that triggers file checkpoint rollback for a given message |
 | `ToolApprovalCard` | Tool approval card with Allow/Deny buttons |
 | `UserQuestionCard` | Structured question card with option selection |
 | `ThinkingBlock` | Collapsible card displaying extended thinking text |
 | `ThinkingIndicator` | Animated dots shown while agent is generating |
 | `CollapsibleCard` | Expandable card wrapper |
-| `StopIcon` | Square stop icon SVG component |
 | `StatusDot` | Phase-colored status indicator |
 | `cn(...inputs)` | `clsx` + `tailwind-merge` utility for class merging |
 | `registerWidget(registration)` | Register a component for a tool name |
@@ -55,7 +74,7 @@ For usage examples, see the [Server Guide](/docs/server) and [Client Guide](/doc
 
 ## Types
 
-Re-exported from both `@neeter/server` and `@neeter/react`:
+Re-exported from `@neeter/server`, `@neeter/core`, and `@neeter/react`:
 
 | Type | Description |
 |------|-------------|

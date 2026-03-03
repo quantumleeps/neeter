@@ -1,8 +1,7 @@
+import { registerWidget, type WidgetProps } from "@neeter/core";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { markdownComponents } from "../markdown-overrides.js";
-import { registerWidget } from "../registry.js";
-import type { WidgetProps } from "../types.js";
 
 function domain(url: string) {
   try {

@@ -219,7 +219,56 @@ importers:
         specifier: ^7.3.1
         version: 7.3.1(@types/node@22.19.11)(jiti@2.6.1)(lightningcss@1.31.1)(tsx@4.21.0)
 
-  packages/react:
+  examples/vanilla-chat:
+    dependencies:
+      '@anthropic-ai/claude-agent-sdk':
+        specifier: latest
+        version: 0.2.63(zod@4.3.6)
+      '@hono/node-server':
+        specifier: ^1.14.3
+        version: 1.19.9(hono@4.12.3)
+      '@neeter/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@neeter/server':
+        specifier: workspace:*
+        version: link:../../packages/server
+      '@neeter/types':
+        specifier: workspace:*
+        version: link:../../packages/types
+      hono:
+        specifier: ^4.12.3
+        version: 4.12.3
+      immer:
+        specifier: ^11.1.4
+        version: 11.1.4
+      zustand:
+        specifier: ^5.0.11
+        version: 5.0.11(@types/react@19.2.14)(immer@11.1.4)(react@19.2.4)
+    devDependencies:
+      '@tailwindcss/vite':
+        specifier: ^4.2.1
+        version: 4.2.1(vite@7.3.1(@types/node@22.19.11)(jiti@2.6.1)(lightningcss@1.31.1)(tsx@4.21.0))
+      '@types/node':
+        specifier: ^22.15.0
+        version: 22.19.11
+      concurrently:
+        specifier: ^9.2.0
+        version: 9.2.1
+      tailwindcss:
+        specifier: ^4.2.1
+        version: 4.2.1
+      tsx:
+        specifier: ^4.20.3
+        version: 4.21.0
+      typescript:
+        specifier: ~5.9.3
+        version: 5.9.3
+      vite:
+        specifier: ^7.3.1
+        version: 7.3.1(@types/node@22.19.11)(jiti@2.6.1)(lightningcss@1.31.1)(tsx@4.21.0)
+
+  packages/core:
     dependencies:
       '@neeter/types':
         specifier: workspace:*
@@ -227,12 +276,28 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
-      react-markdown:
-        specifier: '>=10.0.0'
-        version: 10.1.0(@types/react@19.2.14)(react@19.2.4)
       tailwind-merge:
         specifier: ^3.5.0
         version: 3.5.0
+    devDependencies:
+      immer:
+        specifier: ^11.1.4
+        version: 11.1.4
+      zustand:
+        specifier: ^5.0.11
+        version: 5.0.11(@types/react@19.2.14)(immer@11.1.4)(react@19.2.4)
+
+  packages/react:
+    dependencies:
+      '@neeter/core':
+        specifier: workspace:*
+        version: link:../core
+      '@neeter/types':
+        specifier: workspace:*
+        version: link:../types
+      react-markdown:
+        specifier: '>=10.0.0'
+        version: 10.1.0(@types/react@19.2.14)(react@19.2.4)
     devDependencies:
       '@testing-library/react':
         specifier: ^16.3.2

@@ -8,7 +8,7 @@ Shared TypeScript types for the [neeter](https://github.com/quantumleeps/neeter)
 pnpm add @neeter/types
 ```
 
-> Most users don't need this package directly — all types are re-exported from `@neeter/server` and `@neeter/react`.
+> Most users don't need this package directly — all types are re-exported from `@neeter/server`, `@neeter/core`, and `@neeter/react`.
 
 ## What's inside
 

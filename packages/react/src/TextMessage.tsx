@@ -1,6 +1,6 @@
+import { cn } from "@neeter/core";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { cn } from "./cn.js";
 import { markdownComponents } from "./markdown-overrides.js";
 
 export function TextMessage({

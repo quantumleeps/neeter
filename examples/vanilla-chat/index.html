@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Neeter — Vanilla Chat</title>
+  </head>
+  <body>
+    <div id="app" class="flex h-screen flex-col bg-background text-foreground">
+      <header class="border-b px-4 py-3 flex items-center justify-between">
+        <h1 class="text-lg font-semibold">Neeter Chat <span class="text-sm font-normal text-muted-foreground">(vanilla)</span></h1>
+        <div id="status" class="text-sm text-muted-foreground"></div>
+      </header>
+
+      <div id="messages" class="flex-1 overflow-y-auto p-4 space-y-4"></div>
+
+      <div id="permissions" class="px-4"></div>
+
+      <form id="chat-form" class="border-t p-4 flex gap-2">
+        <textarea
+          id="input"
+          class="flex-1 resize-none rounded-md border bg-background px-3 py-2 text-sm ring-ring placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          placeholder="Send a message…"
+          rows="1"
+        ></textarea>
+        <button
+          id="send-btn"
+          type="submit"
+          class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+        >
+          Send
+        </button>
+        <button
+          id="stop-btn"
+          type="button"
+          class="hidden rounded-md bg-destructive px-4 py-2 text-sm font-medium text-white hover:bg-destructive/90"
+        >
+          Stop
+        </button>
+      </form>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

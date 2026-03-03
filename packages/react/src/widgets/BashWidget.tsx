@@ -1,5 +1,4 @@
-import { registerWidget } from "../registry.js";
-import type { WidgetProps } from "../types.js";
+import { registerWidget, type WidgetProps } from "@neeter/core";
 
 function BashInputRenderer({ input }: { input: Record<string, unknown> }) {
   const command = typeof input.command === "string" ? input.command : null;

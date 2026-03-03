@@ -1,6 +1,6 @@
+import { cn } from "@neeter/core";
 import type { UserQuestionRequest } from "@neeter/types";
 import { useEffect, useRef, useState } from "react";
-import { cn } from "./cn.js";
 
 const OTHER_LABEL = "__other__";
 

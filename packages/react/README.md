@@ -1,13 +1,13 @@
 # @neeter/react
 
-React components and hooks for building chat UIs on top of the [Claude Agent SDK](https://github.com/anthropics/claude-agent-sdk). Connects to an `@neeter/server` backend over SSE with a Zustand store, drop-in components, and a widget system for tool call rendering.
+React components and hooks for building chat UIs on top of the [Claude Agent SDK](https://github.com/anthropics/claude-agent-sdk). Builds on `@neeter/core` for state management and agent lifecycle — with drop-in components and a widget system for tool call rendering.
 
 Part of the [neeter](https://github.com/quantumleeps/neeter) toolkit.
 
 ## Install
 
 ```bash
-pnpm add @neeter/react
+pnpm add @neeter/core @neeter/react
 ```
 
 Peer dependencies:

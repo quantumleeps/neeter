@@ -1,5 +1,4 @@
-import { registerWidget } from "../registry.js";
-import type { WidgetProps } from "../types.js";
+import { registerWidget, type WidgetProps } from "@neeter/core";
 
 /** Show path relative to likely project root, falling back to last 3 segments. */
 function shortPath(filePath: string): string {

@@ -1,0 +1,30 @@
+{
+  "name": "vanilla-chat",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -n server,client -c blue,green \"tsx watch server.ts\" \"vite\"",
+    "dev:server": "tsx watch server.ts",
+    "dev:client": "vite",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "latest",
+    "@hono/node-server": "^1.14.3",
+    "@neeter/core": "workspace:*",
+    "@neeter/server": "workspace:*",
+    "@neeter/types": "workspace:*",
+    "hono": "^4.12.3",
+    "immer": "^11.1.4",
+    "zustand": "^5.0.11"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.2.1",
+    "@types/node": "^22.15.0",
+    "concurrently": "^9.2.0",
+    "tailwindcss": "^4.2.1",
+    "tsx": "^4.20.3",
+    "typescript": "~5.9.3",
+    "vite": "^7.3.1"
+  }
+}

@@ -1,5 +1,4 @@
-import { registerWidget } from "../registry.js";
-import type { WidgetProps } from "../types.js";
+import { registerWidget, type WidgetProps } from "@neeter/core";
 
 function GlobInputRenderer({ input }: { input: Record<string, unknown> }) {
   const pattern = typeof input.pattern === "string" ? input.pattern : null;

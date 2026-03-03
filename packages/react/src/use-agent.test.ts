@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
+
+import { createChatStore } from "@neeter/core";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createChatStore } from "./store.js";
 import { useAgent } from "./use-agent.js";
 
 // ---------------------------------------------------------------------------
@@ -28,7 +29,7 @@ const mockFetch = vi.fn(async (url: string | URL | Request, opts?: RequestInit) 
   if ((url as string).includes("/sessions/replay/")) {
     return { ok: true, json: async () => fetchReplayResponse } as Response;
   }
-  return { json: async () => ({ sessionId: fetchSessionId }) } as Response;
+  return { ok: true, json: async () => ({ sessionId: fetchSessionId }) } as Response;
 });
 
 class MockEventSource {
@@ -208,6 +209,83 @@ describe("useAgent", () => {
       await act(() => result.current.newSession());
 
       expect(es.close).toHaveBeenCalled();
+    });
+  });
+
+  describe("EventSource lifecycle", () => {
+    it("re-creates EventSource with new handler when onCustomEvent changes, without new session", async () => {
+      const store = createChatStore();
+      const oldHandler = vi.fn();
+      const newHandler = vi.fn();
+
+      const { rerender } = renderHook(
+        ({ onCustomEvent }) => useAgent(store, { endpoint: "/api", onCustomEvent }),
+        { initialProps: { onCustomEvent: oldHandler } },
+      );
+
+      await waitFor(() => expect(store.getState().sessionId).toBe("new-session-1"));
+      await waitFor(() => expect(MockEventSource.instances.length).toBeGreaterThan(0));
+
+      const esBefore = MockEventSource.instances[MockEventSource.instances.length - 1];
+      fetchCalls = [];
+
+      rerender({ onCustomEvent: newHandler });
+
+      await waitFor(() => expect(esBefore.close).toHaveBeenCalled());
+      await waitFor(() =>
+        expect(MockEventSource.instances.length).toBeGreaterThan(
+          MockEventSource.instances.indexOf(esBefore) + 1,
+        ),
+      );
+
+      const esAfter = MockEventSource.instances[MockEventSource.instances.length - 1];
+      // biome-ignore lint/suspicious/noExplicitAny: vi.fn() mock calls are any[]
+      const customCall = esAfter.addEventListener.mock.calls.find((c: any) => c[0] === "custom");
+      expect(customCall).toBeDefined();
+      customCall?.[1]({ data: JSON.stringify({ text: "hello" }) });
+
+      expect(newHandler).toHaveBeenCalledWith({ text: "hello" });
+      expect(oldHandler).not.toHaveBeenCalled();
+
+      expect(
+        fetchCalls.filter((c) => c.url === "/api/sessions" && c.method === "POST"),
+      ).toHaveLength(0);
+    });
+
+    it("closes EventSource on unmount", async () => {
+      const store = createChatStore();
+      const { unmount } = renderHook(() => useAgent(store, { endpoint: "/api" }));
+
+      await waitFor(() => expect(store.getState().sessionId).toBe("new-session-1"));
+      await waitFor(() => expect(MockEventSource.instances.length).toBeGreaterThan(0));
+
+      const es = MockEventSource.instances[MockEventSource.instances.length - 1];
+      expect(es.closed).toBe(false);
+
+      unmount();
+
+      expect(es.close).toHaveBeenCalled();
+    });
+
+    it("creates new session when endpoint changes", async () => {
+      const store = createChatStore();
+      const { rerender } = renderHook(({ endpoint }) => useAgent(store, { endpoint }), {
+        initialProps: { endpoint: "/api-v1" },
+      });
+
+      await waitFor(() => expect(fetchCalls).toHaveLength(1));
+      expect(fetchCalls[0].url).toBe("/api-v1/sessions");
+
+      const esBefore = MockEventSource.instances[MockEventSource.instances.length - 1];
+      fetchCalls = [];
+      fetchSessionId = "new-session-2";
+
+      rerender({ endpoint: "/api-v2" });
+
+      await waitFor(() => expect(fetchCalls.some((c) => c.url === "/api-v2/sessions")).toBe(true));
+      expect(store.getState().sessionId).toBe("new-session-2");
+
+      expect(esBefore?.close).toHaveBeenCalled();
     });
   });
 

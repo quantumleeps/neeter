@@ -3,10 +3,9 @@
   "compilerOptions": {
     "composite": true,
     "outDir": "dist",
-    "rootDir": "src",
-    "jsx": "react-jsx"
+    "rootDir": "src"
   },
   "include": ["src"],
   "exclude": ["src/**/*.test.ts"],
-  "references": [{ "path": "../types" }, { "path": "../core" }]
+  "references": [{ "path": "../types" }]
 }

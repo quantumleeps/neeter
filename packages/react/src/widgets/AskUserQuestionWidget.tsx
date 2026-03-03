@@ -1,5 +1,4 @@
-import { registerWidget } from "../registry.js";
-import type { WidgetProps } from "../types.js";
+import { registerWidget, type WidgetProps } from "@neeter/core";
 
 interface QuestionDef {
   question: string;

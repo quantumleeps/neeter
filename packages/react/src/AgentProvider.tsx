@@ -1,7 +1,7 @@
+import { type ChatStore, type ChatStoreShape, createChatStore } from "@neeter/core";
 import type { CustomEvent } from "@neeter/types";
 import { createContext, type ReactNode, useContext, useMemo, useRef } from "react";
 import { useStore } from "zustand";
-import { type ChatStore, type ChatStoreShape, createChatStore } from "./store.js";
 import { type UseAgentConfig, type UseAgentReturn, useAgent } from "./use-agent.js";
 
 interface AgentContextValue extends UseAgentReturn {

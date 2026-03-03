@@ -24,8 +24,8 @@ export function findMatchingApproval(
 
 /**
  * Check if an approval request is "claimed" by any non-terminal tool call
- * in the message list. Claimed approvals are rendered inline by ToolCallCard
- * and should be skipped by PendingPermissions to avoid duplicate UI.
+ * in the message list. Claimed approvals are displayed inline by tool call UI
+ * and should be filtered from standalone permission listings to avoid duplication.
  */
 export function isApprovalClaimedByToolCall(
   request: ToolApprovalRequest,

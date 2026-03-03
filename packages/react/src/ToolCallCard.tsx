@@ -1,12 +1,10 @@
+import { cn, findMatchingApproval, getWidget, stripMcpPrefix } from "@neeter/core";
 import type { ToolCallInfo } from "@neeter/types";
 import { useAgentContext, useChatStore } from "./AgentProvider.js";
 import { ApprovalButtons } from "./ApprovalButtons.js";
-import { findMatchingApproval } from "./approval-matching.js";
 import { CollapsibleCard } from "./CollapsibleCard.js";
-import { cn } from "./cn.js";
-import { getWidget, stripMcpPrefix } from "./registry.js";
 import { PulsingDot, StatusDot } from "./StatusDot.js";
-import type { WidgetProps } from "./types.js";
+import type { WidgetProps, WidgetRegistration } from "./types.js";
 
 export function ToolCallCard({
   toolCall,
@@ -16,7 +14,7 @@ export function ToolCallCard({
   className?: string;
 }) {
   const short = stripMcpPrefix(toolCall.name);
-  const reg = getWidget(short);
+  const reg = getWidget(short) as WidgetRegistration | undefined;
   const label = reg?.label ?? short;
 
   const pendingPermissions = useChatStore((s) => s.pendingPermissions);

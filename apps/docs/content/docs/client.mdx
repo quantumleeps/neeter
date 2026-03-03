@@ -1,11 +1,67 @@
 ---
 title: Client Guide
-description: Styling, custom events, widgets, tool lifecycle, and the SSE protocol for @neeter/react
+description: Styling, custom events, widgets, tool lifecycle, and the SSE protocol for @neeter/core and @neeter/react
 ---
 
-`@neeter/react` provides a drop-in chat UI that connects to your `@neeter/server` backend over SSE.
+`@neeter/react` provides a drop-in chat UI — built on `@neeter/core`'s framework-agnostic `AgentClient` — that connects to your `@neeter/server` backend over SSE.
 
-## Custom events
+## Vanilla TypeScript (no React)
+
+`@neeter/core` exposes the same `AgentClient` and Zustand store that `@neeter/react` uses internally. If you're not using React — or want full control over rendering — use it directly:
+
+```typescript
+import { AgentClient, createChatStore } from "@neeter/core";
+
+const store = createChatStore();
+const client = new AgentClient(store, { endpoint: "/api" });
+
+// Create a session and start listening for SSE events
+await client.connect();
+client.attachEventSource();
+
+// Subscribe to state changes
+store.subscribe((state) => {
+  console.log("messages:", state.messages);
+  console.log("streaming:", state.isStreaming);
+  console.log("thinking:", state.isThinking);
+  console.log("pending approvals:", state.pendingPermissions);
+});
+
+// Send a message
+await client.sendMessage("Hello!");
+
+// Stop the agent mid-turn
+await client.stopSession();
+
+// Respond to a tool approval
+await client.respondToPermission({
+  kind: "tool_approval",
+  requestId: "req-123",
+  behavior: "allow",
+});
+
+// Cleanup when done
+client.destroy();
+```
+
+The store exposes all the same state that `useChatStore()` provides in React — `messages`, `isStreaming`, `isThinking`, `streamingText`, `streamingThinking`, `pendingPermissions`, `totalCost`, and more. Use `store.getState()` for one-off reads or `store.subscribe()` for reactive updates.
+
+Custom events work the same way — pass `onCustomEvent` in the config:
+
+```typescript
+const client = new AgentClient(store, {
+  endpoint: "/api",
+  onCustomEvent: (event) => {
+    if (event.name === "preview_reload") {
+      iframe.contentWindow?.location.reload();
+    }
+  },
+});
+```
+
+See the [vanilla-chat example](https://github.com/quantumleeps/neeter/tree/main/examples/vanilla-chat) for a complete working app.
+
+## Custom events (React)
 
 If your server emits custom events (via `onToolResult` — see [Server Guide](/docs/server#reacting-to-tool-results)), handle them with `onCustomEvent`:
 
@@ -86,7 +142,7 @@ Drop the `@neeter/react/theme.css` import and add `@source` — your shadcn them
 
 ## SSE events
 
-Events emitted by the server, handled automatically by `useAgent`:
+Events emitted by the server, handled automatically by `useAgent` (React) or `attachEventSource()` (vanilla):
 
 | Event | Payload | Description |
 |-------|---------|-------------|

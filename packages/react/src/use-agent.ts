@@ -1,18 +1,11 @@
-import type {
-  CustomEvent,
-  PermissionRequest,
-  PermissionResponse,
-  RewindFilesResult,
-  SessionHistoryEntry,
-  SSEEvent,
-} from "@neeter/types";
+import { AgentClient, type ChatStore } from "@neeter/core";
+import type { PermissionResponse, RewindFilesResult, SessionHistoryEntry } from "@neeter/types";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { type ChatStore, replayEvents } from "./store.js";
 
 export interface UseAgentConfig {
   endpoint?: string;
   resumeSessionId?: string;
-  onCustomEvent?: (event: CustomEvent) => void;
+  onCustomEvent?: (event: import("@neeter/types").CustomEvent) => void;
 }
 
 export interface UseAgentReturn {
@@ -36,7 +29,7 @@ export interface UseAgentReturn {
 }
 
 /**
- * Low-level hook that manages the EventSource lifecycle and feeds SSE events
+ * Low-level hook that manages the AgentClient lifecycle and feeds SSE events
  * into the Zustand store. Most apps should use `AgentProvider` instead —
  * this hook is for custom provider implementations.
  */
@@ -44,291 +37,83 @@ export function useAgent(store: ChatStore, config?: UseAgentConfig): UseAgentRet
   const endpoint = config?.endpoint ?? "/api";
   const resumeSessionId = config?.resumeSessionId;
   const onCustomEvent = config?.onCustomEvent;
-  const eventSourceRef = useRef<EventSource | null>(null);
-  const abortedRef = useRef(false);
+
+  const clientRef = useRef<AgentClient | null>(null);
+  const [sessionHistory, setSessionHistory] = useState<SessionHistoryEntry[]>([]);
 
   const sessionId = useSyncExternalStore(store.subscribe, () => store.getState().sessionId);
   const sdkSessionId = useSyncExternalStore(store.subscribe, () => store.getState().sdkSessionId);
-  const [sessionHistory, setSessionHistory] = useState<SessionHistoryEntry[]>([]);
 
+  // Effect 1: Create client, connect session, destroy on cleanup
+  // onCustomEvent is NOT a dep — changing it shouldn't create a new session
   useEffect(() => {
-    let cancelled = false;
-    async function init() {
-      let res: Response;
-      if (resumeSessionId) {
-        try {
-          const eventsRes = await fetch(`${endpoint}/sessions/replay/${resumeSessionId}`);
-          if (eventsRes.ok && !cancelled) {
-            const events: SSEEvent[] = await eventsRes.json();
-            replayEvents(store, events);
-          }
-        } catch {
-          /* replay is best-effort */
-        }
-        res = await fetch(`${endpoint}/sessions/resume`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sdkSessionId: resumeSessionId }),
-        });
-      } else {
-        res = await fetch(`${endpoint}/sessions`, { method: "POST" });
-      }
-      const data = await res.json();
-      if (!cancelled) store.getState().setSessionId(data.sessionId);
-    }
-    init();
+    const client = new AgentClient(store, { endpoint });
+    client.onHistoryChange = setSessionHistory;
+    clientRef.current = client;
+
+    client.connect(resumeSessionId).catch(() => {
+      // Error already surfaced via store.addSystemMessage in AgentClient.connect
+    });
+
     return () => {
-      cancelled = true;
+      client.destroy();
+      if (clientRef.current === client) {
+        clientRef.current = null;
+      }
     };
   }, [endpoint, resumeSessionId, store]);
 
+  // Effect 2: Attach EventSource with explicit cleanup (Strict Mode safe)
+  // endpoint and store are intentional deps — matches the original hook behavior
+  // biome-ignore lint/correctness/useExhaustiveDependencies: re-attach ES when endpoint/store change
   useEffect(() => {
     if (!sessionId) return;
+    const client = clientRef.current;
+    if (!client) return;
 
-    const es = new EventSource(`${endpoint}/sessions/${sessionId}/events`);
-    eventSourceRef.current = es;
-    abortedRef.current = false;
-
-    es.addEventListener("session_init", (e) => {
-      const { sdkSessionId: id, mcpServers, fileCheckpointing } = JSON.parse(e.data);
-      store.getState().setSdkSessionId(id);
-      if (mcpServers) store.getState().setMcpServers(mcpServers);
-      if (fileCheckpointing) store.getState().setFileCheckpointing(true);
-    });
-
-    es.addEventListener("message_start", () => {
-      store.getState().setThinking(true);
-    });
-
-    es.addEventListener("thinking_delta", (e) => {
-      const { text } = JSON.parse(e.data);
-      store.getState().appendStreamingThinking(text);
-    });
-
-    es.addEventListener("text_delta", (e) => {
-      store.getState().setThinking(false);
-      store.getState().flushStreamingThinking();
-      const { text } = JSON.parse(e.data);
-      store.getState().appendStreamingText(text);
-    });
-
-    es.addEventListener("tool_start", (e) => {
-      store.getState().setThinking(false);
-      store.getState().flushStreamingThinking();
-      store.getState().flushStreamingText();
-      const { id, name } = JSON.parse(e.data);
-      store.getState().startToolCall(id, name);
-    });
-
-    es.addEventListener("tool_input_delta", (e) => {
-      const { id, partialJson } = JSON.parse(e.data);
-      store.getState().appendToolInput(id, partialJson);
-    });
-
-    es.addEventListener("tool_call", (e) => {
-      store.getState().flushStreamingText();
-      const { id, name, input } = JSON.parse(e.data);
-      store.getState().finalizeToolCall(id, name, input);
-    });
-
-    es.addEventListener("tool_result", (e) => {
-      const { toolUseId, result, isError } = JSON.parse(e.data);
-      if (isError) {
-        store.getState().errorToolCall(toolUseId, result);
-      } else {
-        store.getState().completeToolCall(toolUseId, result);
-      }
-      if (store.getState().isStreaming) {
-        store.getState().setThinking(true);
-      }
-    });
-
-    es.addEventListener("permission_request", (e) => {
-      const request = JSON.parse(e.data) as PermissionRequest;
-      store.getState().addPermissionRequest(request);
-    });
-
-    es.addEventListener("session_error", (e) => {
-      const { subtype, stopReason } = JSON.parse(e.data);
-      store.getState().flushStreamingThinking();
-      store.getState().flushStreamingText();
-      store.getState().setThinking(false);
-      store.getState().setStreaming(false);
-      store.getState().setStopReason(stopReason ?? null);
-      if (abortedRef.current) {
-        store.getState().cancelInflightToolCalls();
-        store.getState().addSystemMessage("Interrupted");
-        abortedRef.current = false;
-      } else {
-        store.getState().addSystemMessage(`Session ended: ${subtype}`);
-      }
-    });
-
-    es.addEventListener("turn_complete", (e) => {
-      const data = JSON.parse(e.data);
-      store.getState().flushStreamingThinking();
-      store.getState().flushStreamingText();
-      store.getState().setThinking(false);
-      store.getState().setStreaming(false);
-      store.getState().setStopReason(data.stopReason ?? null);
-      store.getState().addCost({
-        cost: data.cost ?? 0,
-        numTurns: data.numTurns ?? 0,
-        stopReason: data.stopReason ?? null,
-        usage: data.usage ?? null,
-        modelUsage: data.modelUsage ?? null,
-      });
-      if (abortedRef.current) {
-        store.getState().cancelInflightToolCalls();
-        store.getState().addSystemMessage("Interrupted");
-        abortedRef.current = false;
-      }
-    });
-
-    es.addEventListener("error", () => {
-      if (abortedRef.current) {
-        store.getState().flushStreamingThinking();
-        store.getState().flushStreamingText();
-        store.getState().cancelInflightToolCalls();
-        store.getState().setThinking(false);
-        store.getState().setStreaming(false);
-        store.getState().addSystemMessage("Interrupted");
-        abortedRef.current = false;
-        es.close();
-      } else if (es.readyState === EventSource.CLOSED) {
-        store.getState().flushStreamingThinking();
-        store.getState().flushStreamingText();
-        store.getState().setThinking(false);
-        store.getState().setStreaming(false);
-      }
-    });
-
-    es.addEventListener("checkpoint", (e) => {
-      const { userMessageUuid } = JSON.parse(e.data);
-      store.getState().addCheckpoint(userMessageUuid);
-    });
-
-    if (onCustomEvent) {
-      es.addEventListener("custom", (e) => {
-        onCustomEvent(JSON.parse(e.data) as CustomEvent);
-      });
-    }
+    client.onCustomEvent = onCustomEvent;
+    client.attachEventSource();
 
     return () => {
-      es.close();
-      eventSourceRef.current = null;
+      client.closeEventSource();
     };
   }, [sessionId, endpoint, store, onCustomEvent]);
 
-  const sendMessage = useCallback(
-    async (text: string) => {
-      if (!sessionId) return;
-      store.getState().addUserMessage(text);
-      store.getState().setStreaming(true);
-      store.getState().setThinking(true);
-      await fetch(`${endpoint}/sessions/${sessionId}/messages`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
-      });
-    },
-    [sessionId, endpoint, store],
-  );
+  const sendMessage = useCallback(async (text: string) => {
+    await clientRef.current?.sendMessage(text);
+  }, []);
 
   const stopSession = useCallback(async () => {
-    if (!sessionId) return;
-    abortedRef.current = true;
-    store.getState().setThinking(false);
-    store.getState().setStreaming(false);
-    await fetch(`${endpoint}/sessions/${sessionId}/abort`, { method: "POST" });
-  }, [sessionId, endpoint, store]);
+    await clientRef.current?.stopSession();
+  }, []);
 
-  const respondToPermission = useCallback(
-    async (response: PermissionResponse) => {
-      if (!sessionId) return;
-      store.getState().removePermissionRequest(response.requestId);
-      await fetch(`${endpoint}/sessions/${sessionId}/permissions`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(response),
-      });
-    },
-    [sessionId, endpoint, store],
-  );
+  const respondToPermission = useCallback(async (response: PermissionResponse) => {
+    await clientRef.current?.respondToPermission(response);
+  }, []);
 
   const resumeSession = useCallback(
     async (options?: { fork?: boolean; sdkSessionId?: string; resumeSessionAt?: string }) => {
-      const targetSdkSessionId = options?.sdkSessionId ?? store.getState().sdkSessionId;
-      if (!targetSdkSessionId) return;
-
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close();
-        eventSourceRef.current = null;
-      }
-
-      store.getState().reset();
-
-      try {
-        const eventsRes = await fetch(`${endpoint}/sessions/replay/${targetSdkSessionId}`);
-        if (eventsRes.ok) {
-          const events: SSEEvent[] = await eventsRes.json();
-          replayEvents(store, events, {
-            stopAtCheckpoint: options?.resumeSessionAt,
-          });
-        }
-      } catch {
-        /* replay is best-effort */
-      }
-
-      const res = await fetch(`${endpoint}/sessions/resume`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sdkSessionId: targetSdkSessionId,
-          forkSession: options?.fork,
-          resumeSessionAt: options?.resumeSessionAt,
-        }),
-      });
-      const data = await res.json();
-      store.getState().setSessionId(data.sessionId);
+      await clientRef.current?.resumeSession(options);
     },
-    [endpoint, store],
+    [],
   );
 
   const refreshHistory = useCallback(async () => {
-    try {
-      const res = await fetch(`${endpoint}/sessions/history`);
-      if (res.ok) setSessionHistory(await res.json());
-    } catch {
-      /* ignore */
-    }
-  }, [endpoint]);
+    await clientRef.current?.refreshHistory();
+  }, []);
 
   const rewindSession = useCallback(
     async (checkpointId: string, options?: { dryRun?: boolean }): Promise<RewindFilesResult> => {
-      if (!sessionId) return { canRewind: false, error: "No active session" };
-      const res = await fetch(`${endpoint}/sessions/${sessionId}/rewind`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userMessageId: checkpointId, dryRun: options?.dryRun }),
-      });
-      return res.json();
+      const client = clientRef.current;
+      if (!client) return { canRewind: false, error: "No active session" };
+      return client.rewindSession(checkpointId, options);
     },
-    [sessionId, endpoint],
+    [],
   );
 
   const newSession = useCallback(async () => {
-    if (eventSourceRef.current) {
-      eventSourceRef.current.close();
-      eventSourceRef.current = null;
-    }
-
-    store.getState().reset();
-
-    const res = await fetch(`${endpoint}/sessions`, { method: "POST" });
-    const data = await res.json();
-    store.getState().setSessionId(data.sessionId);
-  }, [endpoint, store]);
+    await clientRef.current?.newSession();
+  }, []);
 
   return {
     sessionId,

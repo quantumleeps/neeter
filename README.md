@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/quantumleeps/neeter/actions/workflows/ci.yml/badge.svg)](https://github.com/quantumleeps/neeter/actions/workflows/ci.yml)
 [![npm @neeter/server](https://img.shields.io/npm/v/@neeter/server?label=%40neeter%2Fserver)](https://www.npmjs.com/package/@neeter/server)
+[![npm @neeter/core](https://img.shields.io/npm/v/@neeter/core?label=%40neeter%2Fcore)](https://www.npmjs.com/package/@neeter/core)
 [![npm @neeter/react](https://img.shields.io/npm/v/@neeter/react?label=%40neeter%2Freact)](https://www.npmjs.com/package/@neeter/react)
 [![npm @neeter/types](https://img.shields.io/npm/v/@neeter/types?label=%40neeter%2Ftypes)](https://www.npmjs.com/package/@neeter/types)
 [![license](https://img.shields.io/npm/l/@neeter/server)](./LICENSE)
@@ -49,8 +50,11 @@ Edit diffs, web search with favicon pills, bash output, todo checklists, extende
 # Server
 pnpm add @neeter/server
 
-# Client
-pnpm add @neeter/react
+# Client (React — includes ready-made components)
+pnpm add @neeter/core @neeter/react
+
+# Client (vanilla TypeScript — no framework)
+pnpm add @neeter/core
 ```
 
 Peer dependencies — **server**:
@@ -62,7 +66,7 @@ Peer dependencies — **server**:
 }
 ```
 
-Peer dependencies — **client**:
+Peer dependencies — **@neeter/react**:
 
 ```json
 {
@@ -71,6 +75,15 @@ Peer dependencies — **client**:
   "zustand": ">=5.0.0",
   "immer": ">=10.0.0",
   "tailwindcss": ">=4.0.0"
+}
+```
+
+Peer dependencies — **@neeter/core** (standalone):
+
+```json
+{
+  "zustand": ">=5.0.0",
+  "immer": ">=10.0.0"
 }
 ```
 
@@ -110,7 +123,7 @@ serve({ fetch: app.fetch, port: 3000 });
 
 > Endpoints, session context, permissions, extended thinking, persistence, and sandbox hooks are covered in the [Server Guide](https://quantumleeps.github.io/neeter/docs/server).
 
-### Client
+### Client (React)
 
 ```tsx
 import { AgentProvider, MessageList, ChatInput, useAgentContext } from "@neeter/react";
@@ -137,6 +150,28 @@ function Chat() {
 
 Components use Tailwind utility classes and accept `className` for overrides.
 
+### Client (vanilla TypeScript)
+
+```typescript
+import { AgentClient, createChatStore } from "@neeter/core";
+
+const store = createChatStore();
+const client = new AgentClient(store, { endpoint: "/api" });
+
+await client.connect();
+client.attachEventSource();
+
+// Re-render on every state change
+store.subscribe((state) => {
+  document.getElementById("messages")!.innerHTML =
+    state.messages.map((m) => `<div>${m.content}</div>`).join("");
+});
+
+await client.sendMessage("Hello!");
+```
+
+`AgentClient` is framework-agnostic — use it with Vue, Svelte, Web Components, or plain DOM APIs.
+
 > Styling, custom events, widgets, and the SSE protocol are covered in the [Client Guide](https://quantumleeps.github.io/neeter/docs/client).
 
 ## What you can build
@@ -151,7 +186,8 @@ The spirograph studio above was built by Opus 4.6 using the [code-workbench](exa
 
 | Example | Description |
 |---------|-------------|
-| **[basic-chat](examples/basic-chat)** | Minimal chat UI — `AgentProvider` + `MessageList` + `ChatInput` |
+| **[basic-chat](examples/basic-chat)** | Minimal React chat UI — `AgentProvider` + `MessageList` + `ChatInput` |
+| **[vanilla-chat](examples/vanilla-chat)** | Same chat UI using `@neeter/core` directly — no React, plain TypeScript + DOM APIs |
 | **[code-workbench](examples/code-workbench)** | Split-pane coding assistant with live preview, per-session sandboxes, persistence, file checkpointing, and code viewer |
 
 ## Documentation
@@ -162,7 +198,7 @@ The spirograph studio above was built by Opus 4.6 using the [code-workbench](exa
 | [Client Guide](https://quantumleeps.github.io/neeter/docs/client) | Styling, custom events, widgets, tool lifecycle, SSE protocol |
 | [Built-in Widgets](https://quantumleeps.github.io/neeter/docs/built-in-widgets) | The 11 SDK tool widgets and how to override them |
 | [Custom Widgets](https://quantumleeps.github.io/neeter/docs/custom-widgets) | Registering your own tool widgets |
-| [API Reference](https://quantumleeps.github.io/neeter/docs/api-reference) | All exports and types for server, react, and types packages |
+| [API Reference](https://quantumleeps.github.io/neeter/docs/api-reference) | All exports and types for server, core, react, and types packages |
 | [Development](https://quantumleeps.github.io/neeter/docs/development) | Local setup, pre-commit hooks, CI |
 
 ## License

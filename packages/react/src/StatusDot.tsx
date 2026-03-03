@@ -1,5 +1,5 @@
+import { cn } from "@neeter/core";
 import type { ToolCallPhase } from "@neeter/types";
-import { cn } from "./cn.js";
 
 const phaseClasses: Record<ToolCallPhase, string> = {
   pending: "bg-muted-foreground/40",
